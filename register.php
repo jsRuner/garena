@@ -342,13 +342,14 @@ class Register {
     public function pre_login($username,$captcha_text=false,$captcha_key=false)
     {
         echo "执行登录前的方法".PHP_EOL;
+
         if ($captcha_text && $captcha_key){
 
             $query = [
                 'account' => $username,
 
                 'format' => 'json',
-                'id' => time()*1000,
+                'id' => (string)$this->getMillisecond(),
                 'app_id' => 10000,
 
                 'captcha'=>$captcha_text,
@@ -359,9 +360,8 @@ class Register {
 
             $query = [
                 'account' => $username,
-
                 'format' => 'json',
-                'id' => time()*1000,
+                'id' => (string)$this->getMillisecond(),
                 'app_id' => 10000,
             ];
             $response = $this->register_client->request('get', 'https://sso.garena.com/api/prelogin?'.http_build_query($query));
@@ -389,53 +389,55 @@ class Register {
 
     }
 
+    public function getMillisecond() {
+        list($s1, $s2) = explode(' ', microtime());
+        return (float)sprintf('%.0f', (floatval($s1) + floatval($s2)) * 1000);
+    }
+
+
+    public  function gener_password($password, $v1,$v2){
+
+        $query = [
+            'password' => $password,
+            'v1' => $v1,
+            'v2' => $v2,
+        ];
+//        $response = $this->register_client->request('get', 'https://127.0.0.1:8888/?'.http_build_query($query));
+        $response = $this->register_client->request('get', 'http://172.17.0.8:8888?'.http_build_query($query));
+        $code = $response->getStatusCode(); // 200
+        $reason = $response->getReasonPhrase(); // OK
+        $body = $response->getBody();
+
+        echo $code.PHP_EOL;
+        echo $reason.PHP_EOL;
+        echo $body.PHP_EOL;
+
+        $format_body = json_decode($body,true);
+
+        if (is_array($format_body) && isset($format_body['result'])){
+            return $format_body['result'];
+        }else{
+            return false;
+        }
+
+
+    }
+
     public function login($username,$v1,$v2)
     {
         echo "执行登录方法".PHP_EOL;
         //加密密码
-        $password = '123qwe123';
-        $passwordMd5 = MD5($password);
-        $passwordKey = hash("sha256",hash("sha256",$passwordMd5.$v1).$v2);
-
-        $key = $passwordKey;
-
-        $key = pack('H*', $key);
-//        $key = pack('H*', "bcb04b7e103a0cd8b54763051cef08bc55abe029fdebae5e1d417e2ffb2a00a3");
-
-
-        $key_size =  strlen($key);
-        echo "Key size: " . $key_size . "\n";
-
-        $plaintext = $password;
-//        $plaintext = "This string was AES-256 / CBC / ZeroBytePadding encrypted.";
-        # 为 CBC 模式创建随机的初始向量
-        $iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-        $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-
-        # 创建和 AES 兼容的密文（Rijndael 分组大小 = 128）
-        # 仅适用于编码后的输入不是以 00h 结尾的
-        # （因为默认是使用 0 来补齐数据）
-        $ciphertext = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $key,
-            $plaintext, MCRYPT_MODE_CBC, $iv);
-
-        # 将初始向量附加在密文之后，以供解密时使用
-//        $ciphertext = $iv . $ciphertext;
-
-        # 对密文进行 base64 编码
-//        $ciphertext_base64 = base64_encode($ciphertext);
-
-        $ciphertext = base64_decode($ciphertext);
-
-        $ciphertext = pack('H*',$ciphertext);
+        //http://127.0.0.1:8888/?password=1&v1=2&v2=3
+        $password = $this->gener_password('123qwe123',$v1,$v2);
 
         $query = [
             'account' => $username,
 //            'password' => 'db182980f822ceecd351d030767989f6',
-            'password' => $ciphertext,
+            'password' => $password,
             'redirect_uri' => 'https://intl.garena.com/',
 
             'format' => 'json',
-            'id' => time()*1000,
+            'id' => (string)$this->getMillisecond(),
             'app_id' => 10000,
         ];
 
@@ -493,7 +495,7 @@ class Register {
         //发送验证链接
     }
 
-    public function reg_account()
+    public function reg_account($email)
     {
         //获取注册的用户名
         //获取邮箱
@@ -504,7 +506,7 @@ class Register {
 
         $username_len = rand(7,15);
         $username = $this->generate_username($username_len);
-        $email = $this->generate_email(6);
+//        $email = $this->generate_email(6);
         $reg_result = $this->reg($username,$email);
 
         if (!$reg_result){
@@ -517,52 +519,41 @@ class Register {
         }
     }
 
+    /**
+     * 批量注册账号
+     */
+    public function reg_accounts($emailfile)
+    {
 
+        $file = fopen($emailfile, "r");
+        $emails=array();
+        //输出文本中所有的行，直到文件结束为止。
+        while(! feof($file))
+        {
+            $emails[]= fgets($file);//fgets()函数从文件指针中读取一行
+        }
+        fclose($file);
+        $emails=array_filter($emails);
 
+        foreach ($emails as $email){
+            $email =stristr($email,"----",true);
+            $email = trim($email);
+            echo $email.PHP_EOL;
 
+            $this->reg_account($email); // 使用指定的邮箱。使用指定的密码注册。
+            break;
+        }
+
+    }
 }
 
 
 $register = new Register();
-//$register->reg_account();
-
-//$register->pre_login("rZJ5tQASWM");
-$register->login_account("rZJ5tQASWM");
-
-//$register->login('rZJ5tQASWM','1321','2321');
-
-exit();
+//$register->reg_account(); //注册账号
+//$register->login_account("rZJ5tQASWM"); //登录账号
+$register->reg_accounts("sohu.txt"); //批量
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-//$register->login_email();
-$register->captcha_text('captchas/599c4fea10d20.jpg');
-
-exit();
-
-for ($i=1;$i<=10;$i++){
-
-    $register->gener_captcha();
-}
-
-exit();
-
-$username_len = rand(7,15);
-$username = $register->generate_username($username_len);
-
-$email = $register->generate_email(6);
-
-$register->reg($username,$email);
