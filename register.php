@@ -39,11 +39,16 @@ class Register {
 
     private $register_client;
 
+    private $jar; //特定的cookie.登录使用。
+
 
     function __construct()
     {
-//        $jar = new \GuzzleHttp\Cookie\CookieJar;
-        $this->register_client = new Client(['cookies'=>true]);
+        $this->jar = new \GuzzleHttp\Cookie\CookieJar;
+        $headers =[
+            'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36'
+        ];
+        $this->register_client = new Client(['cookies'=>true,"headers"=>$headers]);
     }
 
     public function generate_username( $length = 8 ) {
@@ -275,7 +280,7 @@ class Register {
                     'email' => $email,
                     'password' => '9d77624958b23754324211e4dc540e365473b0bfc0d358ff3857bcb8954697d1b90f7b7f6f23c6cd210e906c5c79632ca2faad7285c2704d8b1eefa5a1ecda57ecf300912a45cc493fb58869934b7b1cab807ad3332610d859cc47c9695aa14884fd6f389ef9f7e65667016ef15371002b1c771749e930ce323dafa00b9ea3f2',
                     'location' => 'US',
-                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10000&display=page',
+                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
                     'format' => 'json',
                     'id' => time()/1000,
                     'captcha'=>$captcha_text,
@@ -289,7 +294,7 @@ class Register {
                     'email' => $email,
                     'password' => '9d77624958b23754324211e4dc540e365473b0bfc0d358ff3857bcb8954697d1b90f7b7f6f23c6cd210e906c5c79632ca2faad7285c2704d8b1eefa5a1ecda57ecf300912a45cc493fb58869934b7b1cab807ad3332610d859cc47c9695aa14884fd6f389ef9f7e65667016ef15371002b1c771749e930ce323dafa00b9ea3f2',
                     'location' => 'US',
-                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10000&display=page',
+                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
                     'format' => 'json',
                     'id' => time()/1000,
                     'captcha'=>$captcha_text,
@@ -305,7 +310,7 @@ class Register {
                     'email' => $email,
                     'password' => '9d77624958b23754324211e4dc540e365473b0bfc0d358ff3857bcb8954697d1b90f7b7f6f23c6cd210e906c5c79632ca2faad7285c2704d8b1eefa5a1ecda57ecf300912a45cc493fb58869934b7b1cab807ad3332610d859cc47c9695aa14884fd6f389ef9f7e65667016ef15371002b1c771749e930ce323dafa00b9ea3f2',
                     'location' => 'US',
-                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10000&display=page',
+                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
                     'format' => 'json',
                     'id' => time()/1000,
                 ]
@@ -350,7 +355,7 @@ class Register {
 
                 'format' => 'json',
                 'id' => (string)$this->getMillisecond(),
-                'app_id' => 10000,
+                'app_id' => 10100,
 
                 'captcha'=>$captcha_text,
                 'captcha_key'=>$captcha_key
@@ -362,7 +367,7 @@ class Register {
                 'account' => $username,
                 'format' => 'json',
                 'id' => (string)$this->getMillisecond(),
-                'app_id' => 10000,
+                'app_id' => 10100,
             ];
             $response = $this->register_client->request('get', 'https://sso.garena.com/api/prelogin?'.http_build_query($query));
         }
@@ -434,11 +439,11 @@ class Register {
             'account' => $username,
 //            'password' => 'db182980f822ceecd351d030767989f6',
             'password' => $password,
-            'redirect_uri' => 'https://intl.garena.com/',
+            'redirect_uri' => 'https://account.garena.com/',
 
             'format' => 'json',
             'id' => (string)$this->getMillisecond(),
-            'app_id' => 10000,
+            'app_id' => 10100,
         ];
 
         var_dump($query);
@@ -460,9 +465,35 @@ class Register {
         if (is_array($format_body) && isset($format_body['error'])){
             return false;
         }else{
-            return true;
+            return $format_body;
         }
 
+    }
+
+    /**
+     * 初始化
+     *
+     * @param $session_key
+     *
+     */
+    public function init_account($login_info=[])
+    {
+        echo "初始化登录中...".PHP_EOL;
+        var_dump($login_info);
+        sleep(3);
+//        $url ="https://account.garena.com/?session_key=92fcba983ca7b3666674f5b5723db96fe96fb043d4e55c96bb9cbc35d1b8b3dd";
+        $url = "https://account.garena.com/api/account/init?session_key=".$login_info['session_key'];
+        echo $url.PHP_EOL;
+//        $url = "https://account.garena.com/api/account/init?session_key=92fcba983ca7b3666674f5b5723db96fe96fb043d4e55c96bb9cbc35d1b8b3dd;
+        $response = $this->register_client->request('get', $url);
+
+        $code = $response->getStatusCode(); // 200
+        $reason = $response->getReasonPhrase(); // OK
+        $body = $response->getBody();
+        echo $code.PHP_EOL;
+        echo $reason.PHP_EOL;
+        echo $body.PHP_EOL;
+        return true;
     }
 
     public function login_account($username)
@@ -478,14 +509,18 @@ class Register {
             $captcha_info = $this->gener_captcha();
             //解析验证码
             $captcha_text = $this->captcha_text($captcha_info['captcha_file']);
-            //再次注册。还不行，则记录日志。
+
             $reg_result = $this->pre_login($username,$captcha_text,$captcha_info['captcha_key']);
 
-//            if ($reg_result){
-//            }
         }
-        $this->login($username,$reg_result['v1'],$reg_result['v2']);
+        $login_result = $this->login($username,$reg_result['v1'],$reg_result['v2']);
 
+        if ($login_result){
+
+            return $this->init_account($login_result);
+        }else{
+            return false;
+        }
 
     }
 
@@ -545,15 +580,95 @@ class Register {
         }
 
     }
+
+    public function send_email_init()
+    {
+        //https://account.garena.com/api/account/verify_email/init
+        echo "初始化邮箱中...".PHP_EOL;
+        sleep(3);
+//        $url ="https://account.garena.com/?session_key=92fcba983ca7b3666674f5b5723db96fe96fb043d4e55c96bb9cbc35d1b8b3dd";
+        $url = "https://account.garena.com/api/account/verify_email/init";
+        echo $url.PHP_EOL;
+        $response = $this->register_client->request('get', $url);
+        $code = $response->getStatusCode(); // 200
+        $reason = $response->getReasonPhrase(); // OK
+        $body = $response->getBody();
+        echo $code.PHP_EOL;
+        echo $reason.PHP_EOL;
+        echo $body.PHP_EOL;
+        return true;
+        
+    }
+
+    public function send_email($email)
+    {
+        //发送邮件。https://account.garena.com/api/account/verify_email/apply  {"email":"540045865@qq.com","locale":"en"}
+//        {"status":0,"next_action":{"max_retry":5,"verified_info":{"email":"ppag331278bc69af@sohu.com"},"action_type":12,"error_count":0}}
+        $data = [
+            'email'=>$email,
+            'locale'=>"en"
+        ];
+        $body = json_encode($data);
+        echo $body.PHP_EOL;
+       $response = $this->register_client->request('post', 'https://account.garena.com/api/account/verify_email/apply', [
+            'body' => $body,
+            'headers'=>[
+                'Content-Type'=>'application/json',
+                'Origin'>'https://account.garena.com',
+                'Referer'=>'https://account.garena.com/security/verify_email/apply',
+                'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36'
+            ]
+        ]);
+//        $response = $this->register_client->request('POST', 'https://account.garena.com/api/account/verify_email/apply', [
+//            'form_params' => $data
+//        ]);
+
+        $code = $response->getStatusCode(); // 200
+        $reason = $response->getReasonPhrase(); // OK
+        $body = $response->getBody();
+
+        echo $code.PHP_EOL;
+        echo $reason.PHP_EOL;
+        echo $body.PHP_EOL;
+
+        $format_body = json_decode($body,true);
+
+        //todo:需要改进判断
+        if (is_array($format_body) && isset($format_body['status']) && $format_body['status'] == 0){
+
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public function verify_email_before($username,$email)
+    {
+        //登录
+        $login_result = $this->login_account($username);
+        //发送邮件
+        if ($login_result){
+            $this->send_email_init();
+            $this->send_email($email);
+        }
+
+
+    }
+
+
+
 }
 
 
 $register = new Register();
+
+//$register->init_account();
 //$register->reg_account(); //注册账号
 //$register->login_account("rZJ5tQASWM"); //登录账号
-$register->reg_accounts("sohu.txt"); //批量
+//$register->login_account("hiphper321"); //登录账号
+//$register->reg_accounts("sohu.txt"); //批量
 
-
+$register->verify_email_before("hiphper321",'ppag331278bc69af@sohu.com');
 
 
 
