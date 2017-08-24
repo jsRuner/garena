@@ -198,7 +198,8 @@ class Register {
     public function login_email()
     {
 //       $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop.qq.com', 'user' => 'doudouchidou@qq.com', 'password' => 'foxovsofjgllbbgc']);
-        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'ppag331278bc69af@sohu.com', 'password' => '123qwe123']);
+//        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'ppag331278bc69af@sohu.com', 'password' => '123qwe123']);
+        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'baji677990@sohu.com', 'password' => 'zhangrangyong']);
 
         echo $storage->countMessages().PHP_EOL;
 
@@ -222,22 +223,27 @@ class Register {
 
                     echo $url.PHP_EOL;
 
-                    $response = $this->register_client->request('get', $url);
+                    try{
+                        $response = $this->register_client->request('get', $url);
+                        $code = $response->getStatusCode(); // 200
+                        $reason = $response->getReasonPhrase(); // OK
+                        $body = $response->getBody();
+                        echo $code.PHP_EOL;
+                        echo $reason.PHP_EOL;
+                        echo $body.PHP_EOL;
 
-                    $code = $response->getStatusCode(); // 200
-                    $reason = $response->getReasonPhrase(); // OK
-                    $body = $response->getBody();
 
-                    echo $code.PHP_EOL;
-                    echo $reason.PHP_EOL;
-                    echo $body.PHP_EOL;
+                    }  catch (Exception $e) {
+                        print $e->getMessage();
+                        //todo:记录日志。验证失败。
+                    }
                 }
                 break;
             }
         }
     }
 
-    
+
 
     public function captcha_text($captcha_file='captchas/599c4fe6cc77d.jpg')
     {
