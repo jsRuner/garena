@@ -1,0 +1,13 @@
+{
+    "require": {
+        "guzzlehttp/guzzle": "~6.0",
+        "nette/mail":"*",
+        "afinogen89/get-mail": "*"
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://packagist.phpcomposer.com"
+        }
+    }
+}
