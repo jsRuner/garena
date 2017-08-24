@@ -197,34 +197,47 @@ class Register {
 
     public function login_email()
     {
-//        $pop3 = new \Pop3\Connection("pop.qq.com", "doudouchidou@qq.com", "foxovsofjgllbbgc");
-//        $pop3 = new afinogen89\getmail\protocol\Pop3('pop.qq.com');
-//
-//        $pop3->login('doudouchidou@qq.com', 'foxovsofjgllbbgc');
-//        $msgList = $pop3->getList();
-////        var_dump($msgList);
-//        $pop3->logout();
-//
-//        arsort($msgList);
+//       $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop.qq.com', 'user' => 'doudouchidou@qq.com', 'password' => 'foxovsofjgllbbgc']);
+        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'ppag331278bc69af@sohu.com', 'password' => '123qwe123']);
+
+        echo $storage->countMessages().PHP_EOL;
 
 
+        for ($mid=1;$mid<=5;$mid++){
+            $msg = $storage->getMessage($mid); //倒序。5表示第一个邮件。1表示最新的。
+            $subject =  $msg->getHeaders()->getSubject();
+            echo $subject.PHP_EOL;
+            echo $msg->getHeaders()->getDate().PHP_EOL;
+            echo $msg->getHeaders()->getFrom().PHP_EOL;
 
-        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop.qq.com', 'user' => 'doudouchidou@qq.com', 'password' => 'foxovsofjgllbbgc']);
-//        foreach ($msgList as $msgindex){
+            if ($subject == "Verify Your Garena Account Email Address"){
+                    //获取内容。定位链接。get访问。根据内容判断是否成功。
+                $msg_content = $msg->getMsgBody();
+                echo $msg_content.PHP_EOL;
+                preg_match_all('/href="https:\/\/account.garena.com\/ui\/account\/email\/verify(.*?)" style=/i',$msg_content,$arr);
+                var_dump($arr);
+                if (!empty($arr)){
+                    //发送请求。
+                    $url = "https://account.garena.com/ui/account/email/verify".$arr[1][0];
 
-        $num = $storage->countMessages();
+                    echo $url.PHP_EOL;
 
-            $msg = $storage->getMessage($num);
-            $msg->saveToFile('1.eml');
-            echo $msg->getHeaders()->getSubject();
+                    $response = $this->register_client->request('get', $url);
 
-            foreach($msg->getParts() as $part) {
-                echo $part->getContentDecode().PHP_EOL;
+                    $code = $response->getStatusCode(); // 200
+                    $reason = $response->getReasonPhrase(); // OK
+                    $body = $response->getBody();
+
+                    echo $code.PHP_EOL;
+                    echo $reason.PHP_EOL;
+                    echo $body.PHP_EOL;
+                }
+                break;
             }
-
-            sleep(5);
-//        }
+        }
     }
+
+    
 
     public function captcha_text($captcha_file='captchas/599c4fe6cc77d.jpg')
     {
@@ -662,13 +675,15 @@ class Register {
 
 $register = new Register();
 
+$register->login_email();
+
 //$register->init_account();
 //$register->reg_account(); //注册账号
 //$register->login_account("rZJ5tQASWM"); //登录账号
 //$register->login_account("hiphper321"); //登录账号
 //$register->reg_accounts("sohu.txt"); //批量
 
-$register->verify_email_before("hiphper321",'ppag331278bc69af@sohu.com');
+//$register->verify_email_before("hiphper321",'ppag331278bc69af@sohu.com');
 
 
 
