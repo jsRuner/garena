@@ -96,7 +96,7 @@ class Pop3
 
         if ($isTls) {
             $this->request('STLS');
-            $result = stream_socket_enable_crypto($this->_socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            $result = stream_socket_enable_crypto($this->_socket, true, STREAM_crypto_METHOD_TLS_CLIENT);
             if (!$result) {
                 throw new \RuntimeException('cannot enable TLS');
             }
