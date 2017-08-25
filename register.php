@@ -167,17 +167,23 @@ class Register {
     {
         //判断邮箱是否被注册过。
         //发送请求。判断是否有效果。api/register  check
-        $response = $this->register_client->request('GET', 'https://sso.garena.com/api/register/check', [
-            'form_params' => [
-                'username' => $email,
-                'format' => "json",
-                'id' => $this->getMillisecond(),
-            ],
+        $query = [
+            'email' => $email,
+            'format' => "json",
+            'id' => $this->getMillisecond(),
+        ];
+
+        $response = $this->register_client->request('GET', 'https://sso.garena.com/api/register/check?'.http_build_query($query), [
+//            'form_params' => [
+//                'email' => $email,
+//                'format' => "json",
+//                'id' => $this->getMillisecond(),
+//            ],
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:54.0) Gecko/20100101 Firefox/54.0',
                 'Host' => 'sso.garena.com',
-                'Referer'=>"https://sso.garena.com/ui/register?redirect_uri=https%3A%2F%2Fsso.garena.com%2Fui%2Flogin%3Flocale%3Den-US%26redirect_uri%3Dhttps%253A%252F%252Fintl.garena.com%252F%26app_id%3D10000%26display%3Dpage&display=page&locale=en-US",
                 'Accept'     => 'application/json',
+                'X-Requested-With'=>'XMLHttpRequest'
             ]
         ]);
 
@@ -287,7 +293,7 @@ class Register {
     public function captcha_text($captcha_file='captchas/599c4fe6cc77d.jpg')
     {
         $damaUrl = 'http://api.ruokuai.com/create.json';
-        $filename = $captcha_file;	//img.jpg是测试用的打码图片，4位的字母数字混合码,windows下的PHP环境这里需要填写完整路径
+        $filename = realpath('.').'/'.$captcha_file;	//img.jpg是测试用的打码图片，4位的字母数字混合码,windows下的PHP环境这里需要填写完整路径
         $ch = curl_init();
         $postFields = array('username' => 'xxooff',
             'password' => '123qwe123',
@@ -612,7 +618,7 @@ class Register {
             $reg_result = $this->reg($username,$email,$captcha_text,$captcha_info['captcha_key']);
 
             if (!$reg_result){
-                file_put_contents(date('YmdH').'account_error.txt',date('Y-m-d H:i:s').'----'.$username.'----'.$email.PHP_EOL,FILE_APPEND);
+//                file_put_contents(date('YmdH').'account_error.txt',date('Y-m-d H:i:s').'----'.$username.'----'.$email.PHP_EOL,FILE_APPEND);
                 return false;
             }
         }
@@ -641,9 +647,16 @@ class Register {
             $email =stristr($email,"----",true);
             $email = trim($email);
             echo $email.PHP_EOL;
+            $email_password = stristr($email,"----");
+            $email_password = trim($email_password);
+
+            $ispop3_result = $this->check_email_pop3($email,$email_password);
+
             //判断邮箱是否Ok
             $isok_reuslt = $this->isok_email($email);
-            if ($isok_reuslt){
+
+            //未注册同时支持pop3才可以注册。
+            if ($isok_reuslt && $ispop3_result){
                 $this->reg_account($email); // 使用指定的邮箱。使用指定的密码注册。
             }
         }
@@ -720,8 +733,20 @@ class Register {
             $this->send_email_init();
             $this->send_email($email);
         }
+    }
 
-
+    public function check_email_pop3($username,$password)
+    {
+        //判断是否support pop3
+        try{
+            $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => $username, 'password' => $password]);
+            echo $storage->countMessages().PHP_EOL;
+        }catch(Exception $e){
+            echo $username.'is not support pop3'.PHP_EOL;
+            file_put_contents(date('YmdH').'error_email_pop3.txt',date('Y-m-d H:i:s').'----'.$username.'----没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
+            return false;
+        }
+        return true;
     }
 
 
