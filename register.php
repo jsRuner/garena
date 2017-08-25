@@ -162,6 +162,45 @@ class Register {
         return $email;
     }
 
+
+    public function isok_email($email)
+    {
+        //判断邮箱是否被注册过。
+        //发送请求。判断是否有效果。api/register  check
+        $response = $this->register_client->request('GET', 'https://sso.garena.com/api/register/check', [
+            'form_params' => [
+                'username' => $email,
+                'format' => "json",
+                'id' => $this->getMillisecond(),
+            ],
+            'headers' => [
+                'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:54.0) Gecko/20100101 Firefox/54.0',
+                'Host' => 'sso.garena.com',
+                'Referer'=>"https://sso.garena.com/ui/register?redirect_uri=https%3A%2F%2Fsso.garena.com%2Fui%2Flogin%3Flocale%3Den-US%26redirect_uri%3Dhttps%253A%252F%252Fintl.garena.com%252F%26app_id%3D10000%26display%3Dpage&display=page&locale=en-US",
+                'Accept'     => 'application/json',
+            ]
+        ]);
+
+        $code = $response->getStatusCode(); // 200
+        $reason = $response->getReasonPhrase(); // OK
+        $body = $response->getBody();
+
+        echo $code.PHP_EOL;
+        echo $reason.PHP_EOL;
+        echo $body.PHP_EOL;
+
+        $result = json_decode($body,true);
+
+        if (!is_array($result) || isset($result['error']) ){
+            echo "邮箱已经被注册".PHP_EOL;
+            file_put_contents(date('YmdH').'error_email_existed.txt',date('Y-m-d H:i:s').'----'.$email.'----已经被注册,无法使用'.PHP_EOL,FILE_APPEND);
+            return false;
+        }else{
+            echo "邮箱没被注册".PHP_EOL;
+            return true;
+        }
+    }
+
     public function gener_captcha($length=16)
     {
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -427,7 +466,8 @@ class Register {
             'v2' => $v2,
         ];
 //        $response = $this->register_client->request('get', 'https://127.0.0.1:8888/?'.http_build_query($query));
-        $response = $this->register_client->request('get', 'http://172.17.0.8:8888?'.http_build_query($query));
+        $response = $this->register_client->request('get', 'http://666coder.com:8888?'.http_build_query($query));
+//        $response = $this->register_client->request('get', 'http://172.17.0.8:8888?'.http_build_query($query));
         $code = $response->getStatusCode(); // 200
         $reason = $response->getReasonPhrase(); // OK
         $body = $response->getBody();
@@ -570,7 +610,15 @@ class Register {
             $captcha_text = $this->captcha_text($captcha_info['captcha_file']);
             //再次注册。还不行，则记录日志。
             $reg_result = $this->reg($username,$email,$captcha_text,$captcha_info['captcha_key']);
+
+            if (!$reg_result){
+                file_put_contents(date('YmdH').'account_error.txt',date('Y-m-d H:i:s').'----'.$username.'----'.$email.PHP_EOL,FILE_APPEND);
+                return false;
+            }
         }
+        //去发送邮件。
+        $this->verify_email_before($username,$email);
+        file_put_contents(date('YmdH').'account_success.txt',date('Y-m-d H:i:s').'----'.$username.'----'.$email.PHP_EOL,FILE_APPEND);
     }
 
     /**
@@ -593,9 +641,11 @@ class Register {
             $email =stristr($email,"----",true);
             $email = trim($email);
             echo $email.PHP_EOL;
-
-            $this->reg_account($email); // 使用指定的邮箱。使用指定的密码注册。
-            break;
+            //判断邮箱是否Ok
+            $isok_reuslt = $this->isok_email($email);
+            if ($isok_reuslt){
+                $this->reg_account($email); // 使用指定的邮箱。使用指定的密码注册。
+            }
         }
 
     }
@@ -681,13 +731,13 @@ class Register {
 
 $register = new Register();
 
-$register->login_email();
+//$register->login_email();
 
 //$register->init_account();
 //$register->reg_account(); //注册账号
 //$register->login_account("rZJ5tQASWM"); //登录账号
 //$register->login_account("hiphper321"); //登录账号
-//$register->reg_accounts("sohu.txt"); //批量
+$register->reg_accounts("sohu.txt"); //批量
 
 //$register->verify_email_before("hiphper321",'ppag331278bc69af@sohu.com');
 
