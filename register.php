@@ -41,22 +41,24 @@ class Register {
 
     private $register_client;
 
-    private $jar; //特定的cookie.登录使用。
 
     private $db;
 
-    private $account_file;//记录注册后的账号信息。
+    private $log_file;//记录注册后的账号信息。
 
     private  $current_account; //当前注册的账号信息。
 
+    private $debug;
 
-    function __construct()
+
+    function __construct($debug=false)
     {
-        $this->jar = new \GuzzleHttp\Cookie\CookieJar;
+        $this->debug = $debug;
+
         $headers =[
             'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36'
         ];
-        $this->register_client = new Client(['cookies'=>true,"headers"=>$headers]);
+        $this->register_client = new Client(['cookies'=>true,"headers"=>$headers,'connect_timeout' => 30]);
 
         //数据库
         $db = new Sqlite(realpath('.').'/garena.db');
@@ -80,40 +82,26 @@ class Register {
         }
 
         $this->db = $db;
-
-
-        $this->account_file = date('YmdHis').'已注册等待邮箱验证的账号.txt';
+        $this->log_file = date('YmdHis').'注册记录.txt';
 
     }
 
-    public function generate_username( $length = 8 ) {
-        // 密码字符集，可任意添加你需要的字符
+    private function generate_username( $length = 8 ) {
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         $username = "";
         for ( $i = 0; $i < $length; $i++ )
         {
-        // 这里提供两种字符获取方式
-        // 第一种是使用 substr 截取$chars中的任意一位字符；
-        // 第二种是取字符数组 $chars 的任意元素
-        // $username .= substr($chars, mt_rand(0, strlen($chars) – 1), 1);
             $username .= $chars[ mt_rand(0, strlen($chars) - 1) ];
         }
-
-
-        echo $username.PHP_EOL;
-
-        //发送请求。判断是否有效果。api/register  check
-
         $response = $this->register_client->request('GET', 'https://sso.garena.com/api/register/check', [
             'form_params' => [
                 'username' => $username,
                 'format' => "json",
-                'id' => time()/1000,
+                'id' => $this->getMillisecond(),
             ],
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:54.0) Gecko/20100101 Firefox/54.0',
                 'Host' => 'sso.garena.com',
-                'Referer'=>"https://sso.garena.com/ui/register?redirect_uri=https%3A%2F%2Fsso.garena.com%2Fui%2Flogin%3Flocale%3Den-US%26redirect_uri%3Dhttps%253A%252F%252Fintl.garena.com%252F%26app_id%3D10000%26display%3Dpage&display=page&locale=en-US",
                 'Accept'     => 'application/json',
             ]
         ]);
@@ -121,18 +109,12 @@ class Register {
         $code = $response->getStatusCode(); // 200
         $reason = $response->getReasonPhrase(); // OK
         $body = $response->getBody();
-        $remainingBytes = $body->getContents();
 
         echo $code.PHP_EOL;
         echo $reason.PHP_EOL;
         echo $body.PHP_EOL;
-        echo $remainingBytes.PHP_EOL;
-        echo $body !=="{\"result\": 0}".PHP_EOL;
 
         $result = json_decode($body,true);
-
-        var_dump($result);
-
         if (isset($result['result']) && $result['result'] ==0){
             echo "用户名可用".PHP_EOL;
         }else{
@@ -141,67 +123,8 @@ class Register {
         return $username;
     }
 
-    public function generate_email( $length = 6 ) {
-        // 密码字符集，可任意添加你需要的字符
-        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        $email = "";
-        for ( $i = 0; $i < $length; $i++ )
-        {
-            // 这里提供两种字符获取方式
-            // 第一种是使用 substr 截取$chars中的任意一位字符；
-            // 第二种是取字符数组 $chars 的任意元素
-            // $email .= substr($chars, mt_rand(0, strlen($chars) – 1), 1);
-            $email .= $chars[ mt_rand(0, strlen($chars) - 1) ];
-        }
-
-        $email = $email."@qq.com";
-
-
-        echo $email.PHP_EOL;
-
-        //发送请求。判断是否有效果。api/register  check
-        $response = $this->register_client->request('GET', 'https://sso.garena.com/api/register/check', [
-            'form_params' => [
-                'username' => $email,
-                'format' => "json",
-                'id' => time()/1000,
-            ],
-            'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:54.0) Gecko/20100101 Firefox/54.0',
-                'Host' => 'sso.garena.com',
-                'Referer'=>"https://sso.garena.com/ui/register?redirect_uri=https%3A%2F%2Fsso.garena.com%2Fui%2Flogin%3Flocale%3Den-US%26redirect_uri%3Dhttps%253A%252F%252Fintl.garena.com%252F%26app_id%3D10000%26display%3Dpage&display=page&locale=en-US",
-                'Accept'     => 'application/json',
-            ]
-        ]);
-
-        $code = $response->getStatusCode(); // 200
-        $reason = $response->getReasonPhrase(); // OK
-        $body = $response->getBody();
-        $remainingBytes = $body->getContents();
-
-        echo $code.PHP_EOL;
-        echo $reason.PHP_EOL;
-        echo $body.PHP_EOL;
-        echo $remainingBytes.PHP_EOL;
-        echo $body !=="{\"result\": 0}".PHP_EOL;
-
-        $result = json_decode($body,true);
-
-        var_dump($result);
-
-        if (isset($result['result']) && $result['result'] ==0){
-            echo "邮箱可用".PHP_EOL;
-        }else{
-            $this->generate_email($length);
-        }
-        return $email;
-    }
-
-
-    public function isok_email($email)
+    public function is_register_email($email)
     {
-        //判断邮箱是否被注册过。
-        //发送请求。判断是否有效果。api/register  check
         $query = [
             'email' => $email,
             'format' => "json",
@@ -209,11 +132,6 @@ class Register {
         ];
 
         $response = $this->register_client->request('GET', 'https://sso.garena.com/api/register/check?'.http_build_query($query), [
-//            'form_params' => [
-//                'email' => $email,
-//                'format' => "json",
-//                'id' => $this->getMillisecond(),
-//            ],
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:54.0) Gecko/20100101 Firefox/54.0',
                 'Host' => 'sso.garena.com',
@@ -233,16 +151,14 @@ class Register {
         $result = json_decode($body,true);
 
         if (!is_array($result) || isset($result['error']) ){
-            echo "邮箱已经被注册".PHP_EOL;
-            file_put_contents(date('YmdH').'error_email_existed.txt',date('Y-m-d H:i:s').'----'.$email.'----已经被注册,无法使用'.PHP_EOL,FILE_APPEND);
+            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email.PHP_EOL.'已经被注册,无法使用'.PHP_EOL,FILE_APPEND);
             return false;
         }else{
-            echo "邮箱没被注册".PHP_EOL;
             return true;
         }
     }
 
-    public function gener_captcha($length=16)
+    private function gener_captcha($length=16)
     {
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         $captcha_key = "";
@@ -254,7 +170,6 @@ class Register {
         $captcha_src = "https://captcha.garena.com/image?key=".$captcha_key;
 
         $captcha_file = "captchas/".uniqid().'.jpg';
-
 
         $response = $this->register_client->request('get',$captcha_src);
 
@@ -275,58 +190,11 @@ class Register {
 
     }
 
-    public function login_email()
+    public function captcha_text($captcha_file)
     {
-//       $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop.qq.com', 'user' => 'doudouchidou@qq.com', 'password' => 'foxovsofjgllbbgc']);
-//        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'ppag331278bc69af@sohu.com', 'password' => '123qwe123']);
-        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'baji677990@sohu.com', 'password' => 'zhangrangyong']);
-
-        echo $storage->countMessages().PHP_EOL;
-
-
-        for ($mid=1;$mid<=5;$mid++){
-            $msg = $storage->getMessage($mid); //倒序。5表示第一个邮件。1表示最新的。
-            $subject =  $msg->getHeaders()->getSubject();
-            echo $subject.PHP_EOL;
-            echo $msg->getHeaders()->getDate().PHP_EOL;
-            echo $msg->getHeaders()->getFrom().PHP_EOL;
-
-            if ($subject == "Verify Your Garena Account Email Address"){
-                    //获取内容。定位链接。get访问。根据内容判断是否成功。
-                $msg_content = $msg->getMsgBody();
-                echo $msg_content.PHP_EOL;
-                preg_match_all('/href="https:\/\/account.garena.com\/ui\/account\/email\/verify(.*?)" style=/i',$msg_content,$arr);
-                var_dump($arr);
-                if (!empty($arr)){
-                    //发送请求。
-                    $url = "https://account.garena.com/ui/account/email/verify".$arr[1][0];
-
-                    echo $url.PHP_EOL;
-
-                    try{
-                        $response = $this->register_client->request('get', $url);
-                        $code = $response->getStatusCode(); // 200
-                        $reason = $response->getReasonPhrase(); // OK
-                        $body = $response->getBody();
-                        echo $code.PHP_EOL;
-                        echo $reason.PHP_EOL;
-                        echo $body.PHP_EOL;
-
-
-                    }  catch (\Exception $e) {
-                        print $e->getMessage();
-                        //todo:记录日志。验证失败。
-                    }
-                }
-                break;
-            }
+        if (empty($captcha_file)){
+            return '';
         }
-    }
-
-
-
-    public function captcha_text($captcha_file='captchas/599c4fe6cc77d.jpg')
-    {
         $damaUrl = 'http://api.ruokuai.com/create.json';
         $filename = realpath('.').'/'.$captcha_file;	//img.jpg是测试用的打码图片，4位的字母数字混合码,windows下的PHP环境这里需要填写完整路径
         $ch = curl_init();
@@ -367,26 +235,7 @@ class Register {
 
     public function reg($username,$email,$captcha_text=false,$captcha_key=false)
     {
-        echo "执行reg方法".PHP_EOL;
-
-//        $response = $client->post('https://sso.garena.com/api/register');
-
         if ($captcha_text && $captcha_key){
-
-            var_dump([
-                'form_params' => [
-                    'username' => $username,
-                    'email' => $email,
-                    'password' => '9d77624958b23754324211e4dc540e365473b0bfc0d358ff3857bcb8954697d1b90f7b7f6f23c6cd210e906c5c79632ca2faad7285c2704d8b1eefa5a1ecda57ecf300912a45cc493fb58869934b7b1cab807ad3332610d859cc47c9695aa14884fd6f389ef9f7e65667016ef15371002b1c771749e930ce323dafa00b9ea3f2',
-                    'location' => 'US',
-                    'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
-                    'format' => 'json',
-                    'id' => time()/1000,
-                    'captcha'=>$captcha_text,
-                    'captcha_key'=>$captcha_key
-                ]
-            ]);
-
             $response = $this->register_client->request('POST', 'https://sso.garena.com/api/register', [
                 'form_params' => [
                     'username' => $username,
@@ -395,7 +244,7 @@ class Register {
                     'location' => 'US',
                     'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
                     'format' => 'json',
-                    'id' => time()/1000,
+                    'id' => $this->getMillisecond(),
                     'captcha'=>$captcha_text,
                     'captcha_key'=>$captcha_key
                 ]
@@ -411,12 +260,10 @@ class Register {
                     'location' => 'US',
                     'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
                     'format' => 'json',
-                    'id' => time()/1000,
+                    'id' => $this->getMillisecond(),
                 ]
             ]);
         }
-
-
         $code = $response->getStatusCode(); // 200
         $reason = $response->getReasonPhrase(); // OK
         $body = $response->getBody();
@@ -445,8 +292,6 @@ class Register {
      */
     public function pre_login($username,$captcha_text=false,$captcha_key=false)
     {
-        echo "执行登录前的方法".PHP_EOL;
-
         if ($captcha_text && $captcha_key){
 
             $query = [
@@ -506,9 +351,7 @@ class Register {
             'v1' => $v1,
             'v2' => $v2,
         ];
-//        $response = $this->register_client->request('get', 'https://127.0.0.1:8888/?'.http_build_query($query));
         $response = $this->register_client->request('get', 'http://666coder.com:8888?'.http_build_query($query));
-//        $response = $this->register_client->request('get', 'http://172.17.0.8:8888?'.http_build_query($query));
         $code = $response->getStatusCode(); // 200
         $reason = $response->getReasonPhrase(); // OK
         $body = $response->getBody();
@@ -530,14 +373,10 @@ class Register {
 
     public function login($username,$v1,$v2)
     {
-        echo "执行登录方法".PHP_EOL;
-        //加密密码
-        //http://127.0.0.1:8888/?password=1&v1=2&v2=3
         $password = $this->gener_password('123qwe123',$v1,$v2);
 
         $query = [
             'account' => $username,
-//            'password' => 'db182980f822ceecd351d030767989f6',
             'password' => $password,
             'redirect_uri' => 'https://account.garena.com/',
 
@@ -545,8 +384,6 @@ class Register {
             'id' => (string)$this->getMillisecond(),
             'app_id' => 10100,
         ];
-
-        var_dump($query);
 
         $response = $this->register_client->request('get', 'https://sso.garena.com/api/login?'.http_build_query($query));
 
@@ -578,13 +415,8 @@ class Register {
      */
     public function init_account($login_info=[])
     {
-        echo "初始化登录中...".PHP_EOL;
-        var_dump($login_info);
-        sleep(3);
-//        $url ="https://account.garena.com/?session_key=92fcba983ca7b3666674f5b5723db96fe96fb043d4e55c96bb9cbc35d1b8b3dd";
+        sleep(2);
         $url = "https://account.garena.com/api/account/init?session_key=".$login_info['session_key'];
-        echo $url.PHP_EOL;
-//        $url = "https://account.garena.com/api/account/init?session_key=92fcba983ca7b3666674f5b5723db96fe96fb043d4e55c96bb9cbc35d1b8b3dd;
         $response = $this->register_client->request('get', $url);
 
         $code = $response->getStatusCode(); // 200
@@ -598,10 +430,6 @@ class Register {
 
     public function login_account($username)
     {
-        //登录前的操作
-        //失败则获取验证码
-        //解析验证码
-        //登录账号
         $reg_result = $this->pre_login($username);
 
         if (!$reg_result){
@@ -624,24 +452,11 @@ class Register {
 
     }
 
-    public function email_apply($email,$password)
-    {
-        //登录
-        //发送验证链接
-    }
 
     public function reg_account($email)
     {
-        //获取注册的用户名
-        //获取邮箱
-        //提交注册请求。
-        //如果提示验证码。则获取验证码。
-        //解析验证码
-        //再次提交请求。
-
         $username_len = rand(7,15);
         $username = $this->generate_username($username_len);
-//        $email = $this->generate_email(6);
         $reg_result = $this->reg($username,$email);
 
         if (!$reg_result){
@@ -651,7 +466,7 @@ class Register {
             $captcha_text = $this->captcha_text($captcha_info['captcha_file']);
             $reg_result = $this->reg($username,$email,$captcha_text,$captcha_info['captcha_key']);
             if (!$reg_result){
-//                file_put_contents(date('YmdH').'account_error.txt',date('Y-m-d H:i:s').'----'.$username.'----'.$email.PHP_EOL,FILE_APPEND);
+//                todo:注册失败.
                 return false;
             }
 
@@ -667,7 +482,7 @@ class Register {
             'status'=>0
         ];
         $this->db->insert('account',$data);
-        //去发送邮件。
+        //去发送激活邮件。
         return $this->verify_email_before($username,$email);
     }
 
@@ -699,24 +514,22 @@ class Register {
             $email_password = trim($email_password,"----");
             echo $email_password.PHP_EOL;
 
+            if (empty($email) || empty($email_password)){
+                continue;
+            }
             $ispop3_result = $this->check_email_pop3($email,$email_password);
-
             $ispop3_result = true;
-
             if($ispop3_result){
-
                 //判断邮箱是否Ok
-                $isok_reuslt = $this->isok_email($email);
-
+                $is_register_reuslt = $this->is_register_email($email);
                 //未注册同时支持pop3才可以注册。
-                if ($isok_reuslt && $ispop3_result){
-
+                if ($is_register_reuslt && $ispop3_result){
                     $this->current_account=[
                         'email'=>$email,
                         'email_password'=>$email_password
                     ];
 
-                    $this->reg_account($email); // 使用指定的邮箱。使用指定的密码注册。
+                    $this->reg_account($email);
                 }
             }
 
@@ -727,12 +540,8 @@ class Register {
 
     public function send_email_init()
     {
-        //https://account.garena.com/api/account/verify_email/init
-        echo "初始化邮箱中...".PHP_EOL;
-        sleep(3);
-//        $url ="https://account.garena.com/?session_key=92fcba983ca7b3666674f5b5723db96fe96fb043d4e55c96bb9cbc35d1b8b3dd";
+        sleep(2);
         $url = "https://account.garena.com/api/account/verify_email/init";
-        echo $url.PHP_EOL;
         $response = $this->register_client->request('get', $url);
         $code = $response->getStatusCode(); // 200
         $reason = $response->getReasonPhrase(); // OK
@@ -744,7 +553,13 @@ class Register {
         
     }
 
-    public function send_email($email)
+    /**
+     * 发送邮件
+     *
+     * @param $email
+     * @return bool
+     */
+    private function send_email($email)
     {
         $data = [
             'email'=>$email,
@@ -771,7 +586,6 @@ class Register {
 
         $format_body = json_decode($body,true);
 
-        //todo:需要改进判断
         if (is_array($format_body) && isset($format_body['status']) && $format_body['status'] == 0){
             //发送邮件成功。需要更新状态。
             $data = [$email=>[
@@ -784,7 +598,14 @@ class Register {
         }
     }
 
-    public function verify_email_before($username,$email)
+    /**
+     * 登录账号,发送邮件验证.
+     *
+     * @param $username
+     * @param $email
+     * @return bool
+     */
+    private function verify_email_before($username,$email)
     {
         //登录
         $login_result = $this->login_account($username);
@@ -795,7 +616,7 @@ class Register {
             $send_result = $this->send_email($email);
 
             if ($send_result){
-                file_put_contents($this->account_file,date('Y-m-d H:i:s').'----账号:'.$username.'----密码:123qwe123----邮箱:'.$email.PHP_EOL,FILE_APPEND);
+                file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'账号:'.$username.' 密码:123qwe123 邮箱:'.$email.PHP_EOL,FILE_APPEND);
                 return true;
             }else{
                 return false;
@@ -805,46 +626,54 @@ class Register {
         return false;
     }
 
-    public function check_email_pop3($username,$password)
+    /**
+     * 判断邮箱是否支持pop3
+     *
+     *
+     * @param $email
+     * @param $email_password
+     * @return bool
+     */
+    private function check_email_pop3($email,$email_password)
     {
         //判断是否support pop3
-        echo $username.'is not support pop3'.PHP_EOL;
-        file_put_contents(date('YmdH').'error_email_pop3.txt',date('Y-m-d H:i:s').'----'.$username.'----没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
+        $suffix_email = stristr($email,'@');
+
+        switch ($suffix_email){
+            case '@qq.com':
+                $host = "pop.qq.com";
+                break;
+            case '@163.com':
+                $host = "pop.163.com";
+                break;
+            case '@126.com':
+                $host = "pop.126.com";
+                break;
+            case '@sohu.com':
+                $host = "pop3.sohu.com";
+                break;
+            default:
+                $host = "pop.sina.com"; // 默认新浪的
+                break;
+        }
         try{
-            $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => $username, 'password' => $password]);
-            echo $storage->countMessages().PHP_EOL;
+            $storage = new afinogen89\getmail\storage\Pop3(['host' => $host, 'user' => $email, 'password' => $email_password]);
+            $num =  $storage->countMessages();
         }
         catch (\Exception $e) {
             print $e->getMessage();
+            echo PHP_EOL;
+            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.' 邮箱:'.$email.' 密码:'.$email_password.PHP_EOL.'没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
             //todo:记录日志。验证失败。
             return false;
         }
         return true;
     }
-
-    public function test()
-    {
-        $data = ['59a0f33130ee3'=>[
-            'status'=>1
-        ]];
-        $this->db->update('account','email',$data);
-
-    }
 }
 
 
 $register = new Register();
-
-//$register->test();
-//exit();
-
-//$register->login_email();
-//$register->init_account();
-//$register->reg_account(); //注册账号
-//$register->login_account("rZJ5tQASWM"); //登录账号
-//$register->login_account("hiphper321"); //登录账号
-$register->reg_accounts("sohu.txt"); //批量
-//$register->verify_email_before("hiphper321",'ppag331278bc69af@sohu.com');
+$register->reg_accounts("email.txt");
 
 
 
