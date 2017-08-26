@@ -245,7 +245,12 @@ class Register {
 $register = new Register();
 
 while (true){
-    $register->login_emails();
+    try{
+        $register->login_emails();
+    }catch (Exception $e){
+        echo $e->getMessage();
+        echo PHP_EOL;
+    }
 }
 
 

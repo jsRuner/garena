@@ -535,7 +535,13 @@ class Register {
                         'email_password'=>$email_password
                     ];
 
-                    $this->reg_account($email);
+                    try{
+                        $this->reg_account($email);
+                    }catch (Exception $e){
+                        print_r($e->getMessage());
+                        echo PHP_EOL;
+                    }
+
                 }
             }
 
