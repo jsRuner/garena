@@ -417,7 +417,13 @@ class Register {
     {
         sleep(2);
         $url = "https://account.garena.com/api/account/init?session_key=".$login_info['session_key'];
-        $response = $this->register_client->request('get', $url);
+
+        try{
+
+            $response = $this->register_client->request('get', $url);
+        }catch (Exception $e){
+            return false;
+        }
 
         $code = $response->getStatusCode(); // 200
         $reason = $response->getReasonPhrase(); // OK
@@ -663,7 +669,7 @@ class Register {
         catch (\Exception $e) {
             print $e->getMessage();
             echo PHP_EOL;
-            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.' 邮箱:'.$email.' 密码:'.$email_password.PHP_EOL.'没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
+            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email.' 密码:'.$email_password.'没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
             //todo:记录日志。验证失败。
             return false;
         }
