@@ -45,9 +45,7 @@ class Register {
 
     private $db;
 
-    private $account_file;//记录注册后的账号信息。
-
-    private  $current_account; //当前注册的账号信息。
+    private $accounted_file;//记录注册后的账号信息。
 
 
     function __construct()
@@ -64,15 +62,13 @@ class Register {
 
             echo '数据库创建成功'.PHP_EOL;
 
-            $db->settings('version', '1.0');
+            $db->settings('version', '1.0accounted_file');
 
             $db->create('account', array(
                 'id' => 'INTEGER PRIMARY KEY',
                 'username' => 'VARCHAR NOT NULL DEFAULT ""',
                 'password' => 'VARCHAR NOT NULL DEFAULT "123qwe123"',
                 'email' => 'VARCHAR NOT NULL DEFAULT ""',
-                'email_password' => 'VARCHAR NOT NULL DEFAULT ""',
-                'reg_time' => 'DATETIME NOT NULL DEFAULT ""',
                 'reg_time' => 'DATETIME NOT NULL DEFAULT ""',
                 'verify_time' => 'DATETIME NOT NULL DEFAULT ""',
                 'status' => 'Inte NOT NULL DEFAULT "0"',
@@ -82,7 +78,7 @@ class Register {
         $this->db = $db;
 
 
-        $this->account_file = date('YmdHis').'已注册等待邮箱验证的账号.txt';
+        $this->accounted_file = date('YmdHis').'注册成功并通过邮箱验证的账号.txt';
 
     }
 
@@ -92,10 +88,10 @@ class Register {
         $username = "";
         for ( $i = 0; $i < $length; $i++ )
         {
-        // 这里提供两种字符获取方式
-        // 第一种是使用 substr 截取$chars中的任意一位字符；
-        // 第二种是取字符数组 $chars 的任意元素
-        // $username .= substr($chars, mt_rand(0, strlen($chars) – 1), 1);
+            // 这里提供两种字符获取方式
+            // 第一种是使用 substr 截取$chars中的任意一位字符；
+            // 第二种是取字符数组 $chars 的任意元素
+            // $username .= substr($chars, mt_rand(0, strlen($chars) – 1), 1);
             $username .= $chars[ mt_rand(0, strlen($chars) - 1) ];
         }
 
@@ -166,12 +162,14 @@ class Register {
                 'format' => "json",
                 'id' => time()/1000,
             ],
+
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:54.0) Gecko/20100101 Firefox/54.0',
                 'Host' => 'sso.garena.com',
                 'Referer'=>"https://sso.garena.com/ui/register?redirect_uri=https%3A%2F%2Fsso.garena.com%2Fui%2Flogin%3Flocale%3Den-US%26redirect_uri%3Dhttps%253A%252F%252Fintl.garena.com%252F%26app_id%3D10000%26display%3Dpage&display=page&locale=en-US",
                 'Accept'     => 'application/json',
-            ]
+            ],
+
         ]);
 
         $code = $response->getStatusCode(); // 200
@@ -275,24 +273,69 @@ class Register {
 
     }
 
-    public function login_email()
+    //qq邮箱 网易邮箱 sohu邮箱 新浪邮箱。
+    public function login_email($username,$password,$email,$email_password,$reg_time)
     {
 //       $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop.qq.com', 'user' => 'doudouchidou@qq.com', 'password' => 'foxovsofjgllbbgc']);
 //        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'ppag331278bc69af@sohu.com', 'password' => '123qwe123']);
-        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'baji677990@sohu.com', 'password' => 'zhangrangyong']);
+//        $storage = new afinogen89\getmail\storage\Pop3(['host' => 'pop3.sohu.com', 'user' => 'baji677990@sohu.com', 'password' => 'zhangrangyong']);
 
-        echo $storage->countMessages().PHP_EOL;
+        //提取邮箱的后缀。
+        $suffix_email = stristr($email,'@');
 
+        switch ($suffix_email){
+            case '@qq.com':
+                $host = "pop.qq.com";
+                break;
+            case '@163.com':
+                $host = "pop.163.com";
+                break;
+            case '@126.com':
+                $host = "pop.126.com";
+                break;
+            case '@sohu.com':
+                $host = "pop3.sohu.com";
+                break;
+            default:
+                $host = "pop.sina.com"; // 默认新浪的
+                break;
+        }
 
-        for ($mid=1;$mid<=5;$mid++){
-            $msg = $storage->getMessage($mid); //倒序。5表示第一个邮件。1表示最新的。
+        $storage = new afinogen89\getmail\storage\Pop3(['host' => $host, 'user' => $email, 'password' => $email_password]);
+        $num =  $storage->countMessages();
+        echo $num.PHP_EOL;
+
+        //只遍历最新的2份邮件。
+        if ($num >2){
+            $num = 2;
+        }
+
+        for ($mid=1;$mid<=$num;$mid++){
+            $msg = $storage->getMessage($mid); //倒序。1表示最新的。
             $subject =  $msg->getHeaders()->getSubject();
-            echo $subject.PHP_EOL;
-            echo $msg->getHeaders()->getDate().PHP_EOL;
-            echo $msg->getHeaders()->getFrom().PHP_EOL;
 
-            if ($subject == "Verify Your Garena Account Email Address"){
-                    //获取内容。定位链接。get访问。根据内容判断是否成功。
+            $email_date = $msg->getHeaders()->getDate();
+
+            $email_from = $msg->getHeaders()->getFrom();
+
+            //比较时间。与注册的日期比较。
+            $email_time = strtotime($email_date);
+            $reg_time = strtotime($reg_time);
+
+            //超过30分钟则直接跳过。
+            if ( ($email_time - $reg_time) >= 60*30){
+                echo '邮件过期'.PHP_EOL;
+                //邮件过期。
+                continue;
+            }
+
+
+            echo $subject.PHP_EOL;
+            echo $email_date.PHP_EOL;
+            echo $email_from.PHP_EOL;
+
+            if ($subject == "Verify Your Garena Account Email Address" && $email_from == "account@garena.com"){
+                //获取内容。定位链接。get访问。根据内容判断是否成功。
                 $msg_content = $msg->getMsgBody();
                 echo $msg_content.PHP_EOL;
                 preg_match_all('/href="https:\/\/account.garena.com\/ui\/account\/email\/verify(.*?)" style=/i',$msg_content,$arr);
@@ -304,7 +347,7 @@ class Register {
                     echo $url.PHP_EOL;
 
                     try{
-                        $response = $this->register_client->request('get', $url);
+                        $response = $this->register_client->request('get', $url,['connect_timeout' => 8,]);
                         $code = $response->getStatusCode(); // 200
                         $reason = $response->getReasonPhrase(); // OK
                         $body = $response->getBody();
@@ -316,7 +359,19 @@ class Register {
                     }  catch (\Exception $e) {
                         print $e->getMessage();
                         //todo:记录日志。验证失败。
+                        return false;
                     }
+                    //todo:可能存在访问的是过期链接。超过30分钟的。
+
+                    //更新状态。
+                    $data = [$email=>[
+                        'status'=>2,
+                        'verify_time'=>date('Y-m-d H:i:s')
+                    ]];
+                    $this->db->update('account','email',$data);
+
+                    file_put_contents($this->accounted_file,date('Y-m-d H:i:s').'----账号:'.$username.'----密码:123qwe123----邮箱:'.$email.PHP_EOL,FILE_APPEND);
+                    return true;
                 }
                 break;
             }
@@ -649,26 +704,26 @@ class Register {
             $captcha_info = $this->gener_captcha();
             //解析验证码
             $captcha_text = $this->captcha_text($captcha_info['captcha_file']);
+            //再次注册。还不行，则记录日志。
             $reg_result = $this->reg($username,$email,$captcha_text,$captcha_info['captcha_key']);
+
             if (!$reg_result){
 //                file_put_contents(date('YmdH').'account_error.txt',date('Y-m-d H:i:s').'----'.$username.'----'.$email.PHP_EOL,FILE_APPEND);
                 return false;
             }
 
+            //注册成功。写入数据库。
+            $data = [
+                'username'=>$email,
+                'password'=>'123qwe123',
+                'email'=>$email,
+                'reg_time'=>date('Y-m-d H:i:s'),
+                'status'=>0
+            ];
+            $this->db->insert('account',$data);
         }
-        $current_account = $this->current_account;
-        //注册成功。写入数据库。
-        $data = [
-            'username'=>$email,
-            'password'=>'123qwe123',
-            'email'=>$email,
-            'email_password'=>$current_account['email_password'],
-            'reg_time'=>date('Y-m-d H:i:s'),
-            'status'=>0
-        ];
-        $this->db->insert('account',$data);
         //去发送邮件。
-        return $this->verify_email_before($username,$email);
+        $this->verify_email_before($username,$email);
     }
 
     /**
@@ -688,9 +743,6 @@ class Register {
         $emails=array_filter($emails);
 
         foreach ($emails as $email_item){
-
-            $this->current_account = [];
-
             $email =stristr($email_item,"----",true);
             $email = trim($email);
             echo $email.PHP_EOL;
@@ -699,8 +751,7 @@ class Register {
             $email_password = trim($email_password,"----");
             echo $email_password.PHP_EOL;
 
-            $ispop3_result = $this->check_email_pop3($email,$email_password);
-
+//            $ispop3_result = $this->check_email_pop3($email,$email_password);
             $ispop3_result = true;
 
             if($ispop3_result){
@@ -710,12 +761,6 @@ class Register {
 
                 //未注册同时支持pop3才可以注册。
                 if ($isok_reuslt && $ispop3_result){
-
-                    $this->current_account=[
-                        'email'=>$email,
-                        'email_password'=>$email_password
-                    ];
-
                     $this->reg_account($email); // 使用指定的邮箱。使用指定的密码注册。
                 }
             }
@@ -741,7 +786,7 @@ class Register {
         echo $reason.PHP_EOL;
         echo $body.PHP_EOL;
         return true;
-        
+
     }
 
     public function send_email($email)
@@ -752,7 +797,7 @@ class Register {
         ];
         $body = json_encode($data);
         echo $body.PHP_EOL;
-       $response = $this->register_client->request('post', 'https://account.garena.com/api/account/verify_email/apply', [
+        $response = $this->register_client->request('post', 'https://account.garena.com/api/account/verify_email/apply', [
             'body' => $body,
             'headers'=>[
                 'Content-Type'=>'application/json',
@@ -774,10 +819,9 @@ class Register {
         //todo:需要改进判断
         if (is_array($format_body) && isset($format_body['status']) && $format_body['status'] == 0){
             //发送邮件成功。需要更新状态。
-            $data = [$email=>[
-                'status'=>1
-            ]];
-            $this->db->update('account','email',$data);
+            $where = ['email'=>$email];
+            $data = ['status'=>1];
+            $this->db->update('account',$where,$data);
             return true;
         }else{
             return false;
@@ -795,14 +839,10 @@ class Register {
             $send_result = $this->send_email($email);
 
             if ($send_result){
-                file_put_contents($this->account_file,date('Y-m-d H:i:s').'----账号:'.$username.'----密码:123qwe123----邮箱:'.$email.PHP_EOL,FILE_APPEND);
-                return true;
-            }else{
-                return false;
+                file_put_contents($this->account_file,date('Y-m-d H:i:s').'----账号:'.$username.'----邮箱:'.$email.PHP_EOL,FILE_APPEND);
             }
 
         }
-        return false;
     }
 
     public function check_email_pop3($username,$password)
@@ -822,29 +862,58 @@ class Register {
         return true;
     }
 
-    public function test()
+    /**
+     * 批量邮箱。去验证账号。
+     * todo:需要增加代理。否则GG。
+     */
+    public function login_emails()
     {
-        $data = ['59a0f33130ee3'=>[
-            'status'=>1
-        ]];
-        $this->db->update('account','email',$data);
+
+
+
+        $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time` FROM account where status = 0');
+
+
+        if (empty($rows)){
+
+            echo 'no account to login'.PHP_EOL;
+            sleep(2);
+            return;
+        }
+
+
+        foreach ($rows as $row){
+            //需要转换。
+            list($username,$password,$email,$email_password,$reg_time) = $row;
+
+            //注册时间与当前的时间比较。15分钟后尝试激活。避免邮件没收到邮件。
+            $temp = strtotime($reg_time);
+            if ((time() - $temp) <= 60*15){
+                echo "等待邮件的送达.15分钟后去验证邮箱".PHP_EOL;
+            }else{
+                $this->login_email($username,$password,$email,$email_password,$reg_time);
+
+            }
+
+            sleep(1);
+        }
 
     }
 }
 
 
-$register = new Register();
 
-//$register->test();
+//echo date('Y-m-d H:i:s',strtotime('Thu, 24 Aug 2017 15:51:15 +0000'));
+//
 //exit();
 
-//$register->login_email();
-//$register->init_account();
-//$register->reg_account(); //注册账号
-//$register->login_account("rZJ5tQASWM"); //登录账号
-//$register->login_account("hiphper321"); //登录账号
-$register->reg_accounts("sohu.txt"); //批量
-//$register->verify_email_before("hiphper321",'ppag331278bc69af@sohu.com');
+$register = new Register();
+
+
+
+while (true){
+    $register->login_emails();
+}
 
 
 
