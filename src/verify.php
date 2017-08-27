@@ -49,15 +49,19 @@ class Register {
         $this->register_client = new Client(['cookies'=>true,"headers"=>$headers]);
 
         //数据库
-        $db = new Sqlite(realpath('.').'/garena.db');
+        $db = new Sqlite(dirname(__FILE__).'/garena.db');
         $this->db = $db;
-        $this->log_file = date('YmdHis').'已经进行邮箱验证的账号.txt';
+        $this->log_file = dirname(dirname(__FILE__)).'/已激活账号.txt';
 
     }
 
     //qq邮箱 网易邮箱 sohu邮箱 新浪邮箱。
-    public function login_email($username,$password,$email,$email_password,$reg_time)
+    public function login_email($email,$email_password)
     {
+
+        $email = trim($email);
+
+        $email_password = trim($email_password);
         //提取邮箱的后缀。
         $suffix_email = stristr($email,'@');
 
@@ -79,20 +83,25 @@ class Register {
                 break;
         }
 
+        var_dump(
+            ['host' => $host, 'user' => $email, 'password' => $email_password]
+        );
+
         try{
             $storage = new afinogen89\getmail\storage\Pop3(['host' => $host, 'user' => $email, 'password' => $email_password]);
             $num =  $storage->countMessages();
 
         }catch (Exception $e){
+            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email."无法登录.请检查邮箱是否有误".PHP_EOL,FILE_APPEND);
             print_r($e->getMessage());
             echo PHP_EOL;
+            //写入日志
             return false;
         }
 
         //只遍历最新的2份邮件。
-        if ($num >2){
-            $num = 2;
-        }
+
+        $xx = 0;
 
         for ($mid=1;$mid<=$num;$mid++){
             $msg = $storage->getMessage($mid); //倒序。1表示最新的。
@@ -100,17 +109,10 @@ class Register {
             $email_date = $msg->getHeaders()->getDate();
             $email_from = $msg->getHeaders()->getFrom();
 
-            //比较时间。与注册的日期比较。
-            $email_time = strtotime($email_date);
-            $reg_time = strtotime($reg_time);
-
-            //超过30分钟则直接跳过。
-            if ( ($email_time - $reg_time) >= 60*30){
-                continue;
-            }
             echo $subject.PHP_EOL;
             echo $email_date.PHP_EOL;
             echo $email_from.PHP_EOL;
+
 
             if ($subject == "Verify Your Garena Account Email Address" && $email_from == "account@garena.com"){
                 //获取内容。定位链接。get访问。根据内容判断是否成功。
@@ -132,7 +134,15 @@ class Register {
                         echo $body.PHP_EOL;
 
 
-                    }  catch (\Exception $e) {
+                    }  catch (Exception $e) {
+                        //修改为激活失败。
+                        $data = [$email=>[
+                            'status'=>3,
+                            'verify_time'=>date('Y-m-d H:i:s')
+                        ]];
+                        $this->db->update('account','email',$data);
+
+                        file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email."激活链接已经超过30分钟,激活失败".PHP_EOL,FILE_APPEND);
                         print $e->getMessage();
                         //todo:记录日志。验证失败。
                         return false;
@@ -143,12 +153,28 @@ class Register {
                         'verify_time'=>date('Y-m-d H:i:s')
                     ]];
                     $this->db->update('account','email',$data);
-                    file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.' 账号:'.$username.' 密码:123qwe123 邮箱:'.$email.PHP_EOL,FILE_APPEND);
+                    //查询下账号。
+                    $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time` FROM account where email = \''.$email.'\'');
+
+                    $username = "无[当前邮箱资料是从其他程序复制来的,无法找到对应账号信息]";
+                    foreach ($rows as $row) {
+                        list($username, $password, $email, $email_password, $reg_time) = $row;
+                        break;
+                    }
+                    file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'账号:'.$username.' 密码:123qwe123 邮箱:'.$email.PHP_EOL,FILE_APPEND);
                     return true;
                 }
                 break;
+            }else{
+                $xx ++;
             }
         }
+
+        if ($xx == $num){
+            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email."不存在有效的激活邮件.请确认是否发送了。".PHP_EOL,FILE_APPEND);
+        }
+
+
     }
 
     public function send_email_init()
@@ -211,46 +237,72 @@ class Register {
     /**
      * 批量邮箱。去验证账号。
      * todo:需要增加代理。否则GG。
+     *
+     * 修改成邮箱操作。直接登录邮箱即可。
      */
-    public function login_emails()
+    public function login_emails($emailfile)
     {
-        $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time` FROM account where status = 0');
-        if (empty($rows)){
-            echo 'no account to login'.PHP_EOL;
-            sleep(2);
-            return;
+
+        $file = fopen($emailfile, "r");
+
+        $emails=array();
+        //输出文本中所有的行，直到文件结束为止。
+        while(! feof($file))
+        {
+            $emails[]= fgets($file);//fgets()函数从文件指针中读取一行
         }
-        foreach ($rows as $row){
-            list($username,$password,$email,$email_password,$reg_time) = $row;
+        fclose($file);
+        $emails=array_filter($emails);
+
+        foreach ($emails as $email_item){
+
+            $this->current_account = [];
+
+            $email =stristr($email_item,"----",true);
+            $email = trim($email);
+
+            $email_password = stristr($email_item,"----");
+            $email_password = trim($email_password,"----");
+
+
+            echo $email.PHP_EOL;
+            echo $email_password.PHP_EOL;
+
+            $email = trim($email);
+            $email_password = trim($email_password);
 
             if (empty($email) || empty($email_password)){
                 continue;
             }
 
-            echo $email.PHP_EOL;
-            echo $email_password.PHP_EOL;
+            $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time`,`status` FROM account where email = \''.$email.'\'');
 
-            $temp = strtotime($reg_time);
-            if ((time() - $temp) <= 60*15){
-                echo "waiting 15 min to login email".PHP_EOL;
-            }else{
-                $this->login_email($username,$password,$email,$email_password,$reg_time);
+            foreach ($rows as $row) {
+                list($username, $password, $email, $email_password, $reg_time,$status) = $row;
+                break;
             }
-            sleep(1);
+            //不存在或者已经验证了.
+            if (empty($username) || $status == 2){
+                continue;
+            }
+
+            $this->login_email($email,$email_password);
+
+
         }
+
+
+
 
     }
 }
 
 $register = new Register();
 
-while (true){
-    try{
-        $register->login_emails();
-    }catch (Exception $e){
-        echo $e->getMessage();
-        echo PHP_EOL;
-    }
+try{
+    $register->login_emails(dirname(dirname(__FILE__))."/邮箱.txt");
+}catch (Exception $e){
+    echo PHP_EOL;
 }
 
 

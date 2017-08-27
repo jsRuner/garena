@@ -61,7 +61,7 @@ class Register {
         $this->register_client = new Client(['cookies'=>true,"headers"=>$headers,'connect_timeout' => 30]);
 
         //数据库
-        $db = new Sqlite(realpath('.').'/garena.db');
+        $db = new Sqlite(dirname(__FILE__).'/garena.db');
         if ($db->created) {
 
             echo '数据库创建成功'.PHP_EOL;
@@ -82,7 +82,7 @@ class Register {
         }
 
         $this->db = $db;
-        $this->log_file = date('YmdHis').'注册记录.txt';
+        $this->log_file = dirname(dirname(__FILE__)).'/待激活记录.txt';
 
     }
 
@@ -516,16 +516,35 @@ class Register {
 
             $email =stristr($email_item,"----",true);
             $email = trim($email);
-            echo $email.PHP_EOL;
 
             $email_password = stristr($email_item,"----");
             $email_password = trim($email_password,"----");
+
+            $email_password = trim($email_password);
+
+
+            echo $email.PHP_EOL;
             echo $email_password.PHP_EOL;
 
             if (empty($email) || empty($email_password)){
                 continue;
             }
-            $ispop3_result = $this->check_email_pop3($email,$email_password);
+
+            //如果已经存在。则只去激活。
+            $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time`,`status` FROM account where email = \''.$email.'\'');
+
+            foreach ($rows as $row) {
+                list($username, $password, $email, $email_password, $reg_time,$status) = $row;
+                break;
+            }
+            if ($username){
+                //只激活。
+                $this->verify_email_before($username,$email);
+                continue;
+            }
+
+
+//            $ispop3_result = $this->check_email_pop3($email,$email_password);
             $ispop3_result = true;
             if($ispop3_result){
                 //判断邮箱是否Ok
@@ -630,7 +649,7 @@ class Register {
             $send_result = $this->send_email($email);
 
             if ($send_result){
-                file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'账号:'.$username.' 密码:123qwe123 邮箱:'.$email.PHP_EOL,FILE_APPEND);
+                file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'账号:'.$username.' 密码:123qwe123 邮箱:'.$email."注册成功.激活邮件已经发送。".PHP_EOL,FILE_APPEND);
                 return true;
             }else{
                 return false;
@@ -674,7 +693,7 @@ class Register {
             $storage = new afinogen89\getmail\storage\Pop3(['host' => $host, 'user' => $email, 'password' => $email_password]);
             $num =  $storage->countMessages();
         }
-        catch (\Exception $e) {
+        catch (Exception $e) {
             print $e->getMessage();
             echo PHP_EOL;
             file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email.' 密码:'.$email_password.'没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
@@ -683,11 +702,25 @@ class Register {
         }
         return true;
     }
+
+
+
+
 }
 
 
 $register = new Register();
-$register->reg_accounts("邮箱.txt");
+
+file_put_contents($register->log_file,PHP_EOL."------------------------------[".date('Y-m-d H:i:s')."开始执行]-----------------------------------------------------------".PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+
+
+$register->reg_accounts(dirname(dirname(__FILE__))."/邮箱.txt");
+
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL."------------------------------[".date('Y-m-d H:i:s')."结束执行]-----------------------------------------------------------".PHP_EOL,FILE_APPEND);
 
 
 

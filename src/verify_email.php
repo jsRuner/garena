@@ -49,7 +49,7 @@ class Register {
             'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36'
         ];
         $this->register_client = new Client(['cookies'=>true,"headers"=>$headers]);
-        $this->log_file = date('YmdHis').'已注册等待邮箱验证的账号.txt';
+        $this->log_file = dirname(dirname(__FILE__)).'/邮箱检查结果.txt';
 
     }
 
@@ -87,7 +87,6 @@ class Register {
             if (empty($email) || empty($email_password)){
                 continue;
             }
-
             $this->check_email_pop3($email,$email_password);
         }
 
@@ -122,11 +121,58 @@ class Register {
         catch (Exception $e) {
             print $e->getMessage();
             echo PHP_EOL;
-            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.' 账号:'.$email.' 密码:'.$email_password.PHP_EOL.'没开启支持pop3或者账号密码错误,无法使用'.PHP_EOL,FILE_APPEND);
+            file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email.' 密码:'.$email_password.'没开启pop3或者账号密码错误'.PHP_EOL,FILE_APPEND);
             return false;
         }
+        file_put_contents($this->log_file,date('Y-m-d H:i:s').PHP_EOL.'邮箱:'.$email.' 密码:'.$email_password.'可以使用'.PHP_EOL,FILE_APPEND);
         return true;
     }
+
+    /**
+     *模拟登录新浪邮箱
+     *
+     * @param $username
+     * @param $v1
+     * @param $v2
+     * @return bool|mixed
+     */
+    public function login($username,$v1,$v2)
+    {
+        $password = $this->gener_password('123qwe123',$v1,$v2);
+
+        $query = [
+            'account' => $username,
+            'password' => $password,
+            'redirect_uri' => 'https://account.garena.com/',
+
+            'format' => 'json',
+            'id' => (string)$this->getMillisecond(),
+            'app_id' => 10100,
+        ];
+
+        $response = $this->register_client->request('get', 'https://sso.garena.com/api/login?'.http_build_query($query));
+
+
+        $code = $response->getStatusCode(); // 200
+        $reason = $response->getReasonPhrase(); // OK
+        $body = $response->getBody();
+
+        echo $code.PHP_EOL;
+        echo $reason.PHP_EOL;
+        echo $body.PHP_EOL;
+
+        $format_body = json_decode($body,true);
+
+        //todo:需要改进判断
+        if (is_array($format_body) && isset($format_body['error'])){
+            return false;
+        }else{
+            return $format_body;
+        }
+
+    }
+
+
 
 
 }
@@ -134,7 +180,7 @@ class Register {
 
 $register = new Register();
 
-$register->check_emails_pop3("email.txt"); //批量
+$register->check_emails_pop3(dirname(dirname(__FILE__))."/邮箱.txt"); //批量
 
 
 
