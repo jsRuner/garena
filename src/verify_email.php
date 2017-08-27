@@ -36,14 +36,11 @@ require 'vendor/autoload.php';
 use GuzzleHttp\Client;
 
 
-use BootPress\SQLite\Component as Sqlite;
 class Register {
 
     private $register_client;
-    private $db;
     private $log_file;//记录注册后的账号信息。
 
-    private  $current_account; //当前注册的账号信息。
 
 
     function __construct()

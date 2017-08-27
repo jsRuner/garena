@@ -198,8 +198,10 @@ class Register {
         $damaUrl = 'http://api.ruokuai.com/create.json';
         $filename = realpath('.').'/'.$captcha_file;	//img.jpg是测试用的打码图片，4位的字母数字混合码,windows下的PHP环境这里需要填写完整路径
         $ch = curl_init();
-        $postFields = array('username' => 'xxooff',
-            'password' => '123qwe123',
+
+        include "配置文件.php";
+        $postFields = array('username' => $config['username'],
+            'password' => $config['password'],
             'typeid' => 1000,	//4位的字母数字混合码   类型表http://www.ruokuai.com/pricelist.aspx
             'timeout' => 60,	//中文以及选择题类型需要设置更高的超时时间建议90以上
             'softid' => 87478,	//改成你自己的
@@ -685,7 +687,7 @@ class Register {
 
 
 $register = new Register();
-$register->reg_accounts("email.txt");
+$register->reg_accounts("邮箱.txt");
 
 
 
