@@ -40,7 +40,7 @@ use BootPress\SQLite\Component as Sqlite;
 class Register {
     private $register_client;
     private $db;
-    private $log_file;//记录注册后的账号信息。
+    public $log_file;//记录注册后的账号信息。
     function __construct()
     {
         $headers =[
@@ -299,11 +299,24 @@ class Register {
 
 $register = new Register();
 
+
+file_put_contents($register->log_file,PHP_EOL."------------------------------[".date('Y-m-d H:i:s')."开始执行]-----------------------------------------------------------".PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+
+
 try{
     $register->login_emails(dirname(dirname(__FILE__))."/邮箱.txt");
 }catch (Exception $e){
     echo PHP_EOL;
 }
+
+
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL."------------------------------[".date('Y-m-d H:i:s')."结束执行]-----------------------------------------------------------".PHP_EOL,FILE_APPEND);
+
+
 
 
 

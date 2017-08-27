@@ -39,7 +39,7 @@ use GuzzleHttp\Client;
 class Register {
 
     private $register_client;
-    private $log_file;//记录注册后的账号信息。
+    public $log_file;//记录注册后的账号信息。
 
 
 
@@ -180,7 +180,19 @@ class Register {
 
 $register = new Register();
 
+
+file_put_contents($register->log_file,PHP_EOL."------------------------------[".date('Y-m-d H:i:s')."开始执行]-----------------------------------------------------------".PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+
+
+
 $register->check_emails_pop3(dirname(dirname(__FILE__))."/邮箱.txt"); //批量
 
+
+
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL,FILE_APPEND);
+file_put_contents($register->log_file,PHP_EOL."------------------------------[".date('Y-m-d H:i:s')."结束执行]-----------------------------------------------------------".PHP_EOL,FILE_APPEND);
 
 

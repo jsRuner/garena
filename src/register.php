@@ -44,7 +44,7 @@ class Register {
 
     private $db;
 
-    private $log_file;//记录注册后的账号信息。
+    public $log_file;//记录注册后的账号信息。
 
     private  $current_account; //当前注册的账号信息。
 
@@ -531,19 +531,19 @@ class Register {
             }
 
             //如果已经存在。则只去激活。
-            $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time`,`status` FROM account where email = \''.$email.'\'');
+            $rows = $this->db->all('SELECT `username`,`password`,`email`,`email_password`,`reg_time`,`status` FROM account where email = \''.$email.'\' and status != 2 ');
 
             foreach ($rows as $row) {
                 list($username, $password, $email, $email_password, $reg_time,$status) = $row;
                 break;
             }
-            if ($username){
+            if ($rows){
+                var_dump($rows);
+                echo 'account is existed'.PHP_EOL;
                 //只激活。
                 $this->verify_email_before($username,$email);
                 continue;
             }
-
-
 //            $ispop3_result = $this->check_email_pop3($email,$email_password);
             $ispop3_result = true;
             if($ispop3_result){
