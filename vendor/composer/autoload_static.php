@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit2fff3b5e4792c94030189301551fc51c
+class ComposerStaticInit0835576b3d6a1fa28dcb326c9ad8ac22
 {
     public static $files = array (
         'c964ee0ededf28c96ebd9db5099ef910' => __DIR__ . '/..' . '/guzzlehttp/promises/src/functions_include.php',
@@ -13,9 +13,9 @@ class ComposerStaticInit2fff3b5e4792c94030189301551fc51c
     );
 
     public static $prefixLengthsPsr4 = array (
-        'a' => 
+        'W' => 
         array (
-            'afinogen89\\getmail\\' => 19,
+            'Workerman\\MySQL\\' => 16,
         ),
         'P' => 
         array (
@@ -30,9 +30,9 @@ class ComposerStaticInit2fff3b5e4792c94030189301551fc51c
     );
 
     public static $prefixDirsPsr4 = array (
-        'afinogen89\\getmail\\' => 
+        'Workerman\\MySQL\\' => 
         array (
-            0 => __DIR__ . '/..' . '/afinogen89/get-mail/src',
+            0 => __DIR__ . '/..' . '/workerman/mysql/src',
         ),
         'Psr\\Http\\Message\\' => 
         array (
@@ -110,9 +110,9 @@ class ComposerStaticInit2fff3b5e4792c94030189301551fc51c
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit2fff3b5e4792c94030189301551fc51c::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit2fff3b5e4792c94030189301551fc51c::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit2fff3b5e4792c94030189301551fc51c::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit0835576b3d6a1fa28dcb326c9ad8ac22::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit0835576b3d6a1fa28dcb326c9ad8ac22::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit0835576b3d6a1fa28dcb326c9ad8ac22::$classMap;
 
         }, null, ClassLoader::class);
     }

@@ -20,7 +20,7 @@
         "require-dev": {
             "phpunit/phpunit": "^4.0"
         },
-        "time": "2016-12-20 10:07:11",
+        "time": "2016-12-20T10:07:11+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -70,7 +70,7 @@
         "require": {
             "php": ">=5.3.0"
         },
-        "time": "2016-08-06 14:39:51",
+        "time": "2016-08-06T14:39:51+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -129,7 +129,7 @@
         "require-dev": {
             "phpunit/phpunit": "~4.0"
         },
-        "time": "2017-03-20 17:10:46",
+        "time": "2017-03-20T17:10:46+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -199,7 +199,7 @@
         "suggest": {
             "psr/log": "Required for using the Log middleware"
         },
-        "time": "2017-06-22 18:50:49",
+        "time": "2017-06-22T18:50:49+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -239,18 +239,58 @@
         ]
     },
     {
-        "name": "nette/utils",
-        "version": "v2.4.7",
-        "version_normalized": "2.4.7.0",
+        "name": "workerman/mysql",
+        "version": "v1.0.1",
+        "version_normalized": "1.0.1.0",
         "source": {
             "type": "git",
-            "url": "https://github.com/nette/utils.git",
-            "reference": "2750d3948e255f59715a5e01c7453a1fec610996"
+            "url": "https://github.com/walkor/mysql.git",
+            "reference": "745d62528372e0ca7f1be05f029493b9fce2dc76"
         },
         "dist": {
             "type": "zip",
-            "url": "https://files.phpcomposer.com/files/nette/utils/2750d3948e255f59715a5e01c7453a1fec610996.zip",
-            "reference": "2750d3948e255f59715a5e01c7453a1fec610996",
+            "url": "https://files.phpcomposer.com/files/walkor/mysql/745d62528372e0ca7f1be05f029493b9fce2dc76.zip",
+            "reference": "745d62528372e0ca7f1be05f029493b9fce2dc76",
+            "shasum": ""
+        },
+        "require": {
+            "ext-pdo": "*",
+            "ext-pdo_mysql": "*",
+            "php": ">=5.3"
+        },
+        "time": "2017-03-18T01:48:33+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Workerman\\MySQL\\": "./src"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "description": "Long-living MySQL connection for daemon.",
+        "homepage": "http://www.workerman.net",
+        "keywords": [
+            "mysql",
+            "pdo",
+            "pdo_mysql"
+        ]
+    },
+    {
+        "name": "nette/utils",
+        "version": "v2.4.8",
+        "version_normalized": "2.4.8.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/nette/utils.git",
+            "reference": "f1584033b5af945b470533b466b81a789d532034"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://files.phpcomposer.com/files/nette/utils/f1584033b5af945b470533b466b81a789d532034.zip",
+            "reference": "f1584033b5af945b470533b466b81a789d532034",
             "shasum": ""
         },
         "require": {
@@ -271,7 +311,7 @@
             "ext-mbstring": "to use Strings::lower() etc...",
             "ext-xml": "to use Strings::length() etc. when mbstring is not available"
         },
-        "time": "2017-07-11 19:25:29",
+        "time": "2017-08-20T17:32:29+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -300,8 +340,24 @@
                 "homepage": "https://nette.org/contributors"
             }
         ],
-        "description": "Nette Utility Classes",
-        "homepage": "https://nette.org"
+        "description": "🛠 Nette Utils: lightweight utilities for string & array manipulation, image handling, safe JSON encoding/decoding, validation, slug or strong password generating etc.",
+        "homepage": "https://nette.org",
+        "keywords": [
+            "array",
+            "core",
+            "datetime",
+            "images",
+            "json",
+            "nette",
+            "paginator",
+            "password",
+            "slugify",
+            "string",
+            "unicode",
+            "utf-8",
+            "utility",
+            "validation"
+        ]
     },
     {
         "name": "nette/mail",
@@ -334,7 +390,7 @@
         "suggest": {
             "ext-fileinfo": "to detect type of attached files"
         },
-        "time": "2017-07-13 16:51:28",
+        "time": "2017-07-13T16:51:28+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -365,49 +421,5 @@
         ],
         "description": "Nette Mail: Sending E-mails",
         "homepage": "https://nette.org"
-    },
-    {
-        "name": "afinogen89/get-mail",
-        "version": "0.0.6",
-        "version_normalized": "0.0.6.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/Afinogen/get-mail.git",
-            "reference": "51cec294eec4ef7ce8df010e7346cdc8ef212f18"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://files.phpcomposer.com/files/Afinogen/get-mail/51cec294eec4ef7ce8df010e7346cdc8ef212f18.zip",
-            "reference": "51cec294eec4ef7ce8df010e7346cdc8ef212f18",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.4.0"
-        },
-        "time": "2017-05-22 13:10:18",
-        "type": "yii2-extension",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "afinogen89\\getmail\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "BSD-3-Clause"
-        ],
-        "authors": [
-            {
-                "name": "Sergej Pozdnyakov",
-                "email": "afinogen89@gmail.com"
-            }
-        ],
-        "description": "Get Mail from POP3",
-        "keywords": [
-            " get mail",
-            " pop3",
-            "extension",
-            "yii2"
-        ]
     }
 ]
