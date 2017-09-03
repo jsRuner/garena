@@ -1,9 +1,8 @@
 {
     "require": {
         "guzzlehttp/guzzle": "~6.0",
-        "nette/mail":"*",
-        "afinogen89/get-mail": "*",
-        "bootpress/sqlite": "^1.0"
+        "workerman/mysql": "^1.0",
+        "nette/mail":"*"
     },
     "repositories": {
         "packagist": {

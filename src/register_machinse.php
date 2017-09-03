@@ -46,6 +46,8 @@ const API_ACCOUNT_VERIFY_EMAIL_INIT = "https://account.garena.com/api/account/ve
 const API_ACCOUNT_VERIFY_EMAIL_APPLY = "https://account.garena.com/api/account/verify_email/apply";
 
 
+const API_FETCH_IPS = "http://ttvp.mimidaili.com/ip/";
+
 class Register_machinse{
     private $account;
     private $db;
@@ -54,6 +56,8 @@ class Register_machinse{
 
     private $login_flag; //是否注册ok。
     private $send_flag;//是否发送成功。
+
+    private $proxy;
 
 
     function __construct()
@@ -68,14 +72,36 @@ class Register_machinse{
         $headers =[
             'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36'
         ];
+
+//        $this->fetch_ip();
+
+
         $this->http_client = new Client(
             [
                 'cookies'=>true,
-                'headers'=>$headers
+                'headers'=>$headers,
+//                'proxy'=>$this->proxy
             ]
         );
         $this->debug = true;
         $this->login_flag = false;
+    }
+
+    public function fetch_ip()
+    {
+        //http://ttvp.mimidaili.com/ip/?tid=557732816270489&num=10&delay=1&protocol=https&foreign=none
+        $form_params = [
+            'tid'=>'557732816270489',
+            'num'=>1,
+//            'protocol'=>'https',
+            'foreign'=>'only',
+            'delay'=>1,
+            'exclude_ports'=>'8080',
+            'filter'=>'on'
+        ];
+        $ip = file_get_contents(API_FETCH_IPS.'?'.http_build_query($form_params));
+        $this->proxy = 'tcp://'.$ip;
+        echo $this->proxy.PHP_EOL;
     }
 
     public function register()
@@ -83,10 +109,8 @@ class Register_machinse{
         $this->generate_account();
         $this->post_account();
         if ($this->login_flag){
-            $result = $this->login_account();
-            if ($result){
-                $this->send_email();
-            }
+             $this->login_account();
+             $this->send_email();
         }
     }
 
@@ -186,6 +210,11 @@ class Register_machinse{
         $response = $this->http_client->request('get', API_PRELOGIN.'?'.http_build_query($form_params));
 
         $body = $response->getBody();
+        if ($this->debug){
+            echo 'login_account method'.PHP_EOL;
+            echo $body.PHP_EOL;
+        }
+
         $result = json_decode($body,true);
         if (!is_array($result) || isset($result['error']) ){
             if (is_array($result) && $result['error'] == 'error_require_captcha'){
@@ -213,12 +242,26 @@ class Register_machinse{
 
         $response = $this->http_client->request('get', API_LOGIN.'?'.http_build_query($form_params));
         $body = $response->getBody();
+        if ($this->debug){
+            echo 'login_account method ：'.API_LOGIN.PHP_EOL;
+            echo $body.PHP_EOL;
+        }
+
         $result = json_decode($body,true);
         if (is_array($result) && isset($result['error'])){
             return false;
         }
+        sleep(1);
         $url = API_ACCOUNT_INIT."?session_key=".$result['session_key'];
-        $this->http_client->request('get',$url);
+        $response =$this->http_client->request('get',$url);
+        $body = $response->getBody();
+        if ($this->debug){
+            echo $url.PHP_EOL;
+            echo $body.PHP_EOL;
+        }
+        sleep(3);
+
+
         return true;
     }
 
@@ -230,12 +273,17 @@ class Register_machinse{
             'locale'=>"en"
         ];
         $body = json_encode($form_params);
+        if ($this->debug){
+            echo 'send_email method step 1'.PHP_EOL;
+            echo $body.PHP_EOL;
+        }
+
         $response = $this->http_client->request('post', API_ACCOUNT_VERIFY_EMAIL_APPLY, [
            'body' => $body,
        ]);
         $body = $response->getBody();
         if ($this->debug){
-            echo 'send_email method'.PHP_EOL;
+            echo 'send_email method step 2'.PHP_EOL;
             echo $body.PHP_EOL;
         }
 
@@ -338,10 +386,6 @@ class Register_machinse{
             return false;
         }
     }
-
-
-
-
     //提交用户名是否可用请求。邮箱是否可用请求。
     //提交注册请求。
     //登录账号。发送邮件。
@@ -352,8 +396,14 @@ class Register_machinse{
     }
 
 }
-
-
 $register_machinese = new Register_machinse();
+while (true){
+    try{
 
-$register_machinese->register();
+//        $register_machinese = new Register_machinse();
+        $register_machinese->register();
+    }catch (Exception $e){
+
+    }
+    echo "-------------------".PHP_EOL;
+}

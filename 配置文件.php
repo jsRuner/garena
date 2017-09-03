@@ -34,6 +34,6 @@
 
 
 $config=[
-    'username'=>"你的若快账号",
-    'password'=>"你的若快密码"
+    'username'=>"xxooff",
+    'password'=>"123qwe123"
 ];
