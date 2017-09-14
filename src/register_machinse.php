@@ -48,6 +48,8 @@ const API_ACCOUNT_VERIFY_EMAIL_APPLY = "https://account.garena.com/api/account/v
 
 const API_FETCH_IPS = "http://ttvp.mimidaili.com/ip/";
 
+const API_RUOKUAI_ERROR = "http://api.ruokuai.com/reporterror.json";
+
 class Register_machinse{
     private $account;
     private $db;
@@ -58,6 +60,8 @@ class Register_machinse{
     private $send_flag;//是否发送成功。
 
     private $proxy;
+
+    private  $captcha_id; //验证码的题目id
 
 
     function __construct()
@@ -78,6 +82,7 @@ class Register_machinse{
 
         $this->http_client = new Client(
             [
+                'timeout'=>65,
                 'cookies'=>true,
                 'headers'=>$headers,
 //                'proxy'=>$this->proxy
@@ -187,6 +192,10 @@ class Register_machinse{
                 }
 
             }
+
+            if (is_array($result) && $result['error'] == 'error_captcha'){
+                $this->report_error();
+            }
             return false;
         }
         $this->login_flag = true;
@@ -202,9 +211,15 @@ class Register_machinse{
             'app_id' => 10100,
         ];
 
+
         if ($captcha && $captcha_key){
             $form_params['captcha'] = $captcha;
             $form_params['captcha_key'] = $captcha_key;
+        }
+
+        if ($this->debug){
+            echo 'login_account method'.PHP_EOL;
+            echo json_encode($form_params).PHP_EOL;
         }
 
         $response = $this->http_client->request('get', API_PRELOGIN.'?'.http_build_query($form_params));
@@ -225,6 +240,10 @@ class Register_machinse{
                     $this->login_account($captcha,$captcha_info['captcha_key']);
                 }
 
+            }
+
+            if (is_array($result) && $result['error'] == 'error_captcha'){
+                $this->report_error();
             }
             return false;
         }
@@ -286,18 +305,21 @@ class Register_machinse{
             echo 'send_email method step 2'.PHP_EOL;
             echo $body.PHP_EOL;
         }
-
+        //next_action
         $result = json_decode($body,true);
         if (!is_array($result) || isset($result['error'])){
             return false;
         }
-
-        $insert_id = $this->db->insert('account')->cols(array(
-            'username'=>$this->account->getUsername(),
-            'passwd'=>$this->account->getPasswd(),
-            'email'=>$this->account->getEmail(),
-            'reg_date'=>$this->account->getRegDate(),
+        //{"status":0,"next_action":{"max_retry":5,"verified_info":{"email":"rlgnvzjt@tempr.email"},"action_type":12,"error_count":0}}
+        if (isset($result['status']) && isset($result['next_action'])){
+            $insert_id = $this->db->insert('account')->cols(array(
+                'username'=>$this->account->getUsername(),
+                'passwd'=>$this->account->getPasswd(),
+                'email'=>$this->account->getEmail(),
+                'reg_date'=>$this->account->getRegDate(),
             ))->query();
+        }
+
     }
 
     public function fetch_passwd($passwd,$v1,$v2)
@@ -347,6 +369,36 @@ class Register_machinse{
         ];
     }
 
+    public function report_error()
+    {
+        //上报错码。
+        $damaUrl = API_RUOKUAI_ERROR;
+        $ch = curl_init();
+
+        include "配置文件.php";
+        $postFields = array(
+            'username' => $config['username'],
+            'password' => $config['password'],
+            'softid' => 87478,	//改成你自己的
+            'softkey' => '8f200eeed01f4847bd02f6a2829dcb75',	//改成你自己的
+            'id' => $this->captcha_id
+        );
+
+        curl_setopt($ch, CURLOPT_HEADER, FALSE);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_URL,$damaUrl);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);	//设置本机的post请求超时时间，如果timeout参数设置60 这里至少设置65
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+
+        $body = curl_exec($ch);
+        curl_close($ch);
+        if ($this->debug){
+            echo 'report_error method'.PHP_EOL;
+            echo $body.PHP_EOL;
+        }
+    }
+
     public function captch2text($captcha_file = '')
     {
         if (empty($captcha_file)){
@@ -381,6 +433,7 @@ class Register_machinse{
         }
         $result = json_decode($body,true);
         if(is_array($result) && isset($result['Result'])){
+            $this->captcha_id = $result['Result'];
             return $result['Result'];
         }else{
             return false;

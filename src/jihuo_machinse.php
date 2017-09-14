@@ -59,6 +59,7 @@ class  Jihuo_machinse {
         ];
         $this->http_client = new Client(
             [
+                'timeout'=>20,
                 'cookies'=>true,
                 'headers'=>$headers
             ]
@@ -82,13 +83,13 @@ class  Jihuo_machinse {
 
     public function send_account()
     {
-        $sql = "select `id`,`username`,`passwd`,`email` from `account` WHERE `status`= 1";
+        $sql = "select `id`,`username`,`passwd`,`email` from `account` WHERE `status`= 1 ";
         if ($this->debug){
             echo $sql.PHP_EOL;
         }
         $result = $this->db->query($sql);
         $num = count($result);
-        if ($result && $num >=50 ){
+        if ($result && $num >=100 ){
             //todo：发送邮件。
             $body = '';
             $ids = '';
@@ -112,7 +113,7 @@ class  Jihuo_machinse {
                 'host' => 'smtp.163.com',
                 'username' => 'hi_php@163.com',
                 'password' => 'xxoo123',
-                'secure' => 'ssl', //使用465端口发送邮件。
+//                'secure' => 'ssl', //使用465端口发送邮件。
             ]);
 
             try{
@@ -142,7 +143,8 @@ class  Jihuo_machinse {
     public function get_account()
     {
         $reg_date = date('Y-m-d H:i:s',time()-60*30);//todo:需要修改为30
-        $sql = "select `email` from `account` WHERE `status`= 0 AND `reg_date` > '".$reg_date. "'";
+        $sql = "select `email` from `account` WHERE `status`= 0  order by `id` desc LIMIT 10   ";
+//        $sql = "select `email` from `account` WHERE `status`= 0 AND `reg_date` > '".$reg_date. "' order by `id` desc LIMIT 10   ";
         if ($this->debug){
             echo $sql.PHP_EOL;
         }
@@ -166,6 +168,9 @@ class  Jihuo_machinse {
         //访问邮件内容
         //激活链接
         $email = $this->account['email'];
+        if ($this->debug){
+            echo $email.PHP_EOL;
+        }
         $prefix = strstr($email,'@',true);
         $suffix = strstr($email,'@');
         $suffix = trim($suffix,'@');
@@ -228,11 +233,17 @@ class  Jihuo_machinse {
 }
 
 //
-//$jihuo_machinse = new Jihuo_machinse();
+$jihuo_machinse = new Jihuo_machinse();
 //
 //
-//while(true){
-//    $jihuo_machinse->jihuo_account();
-//    sleep(2);
-//}
+while(true){
+    try{
+
+        $jihuo_machinse->jihuo_account();
+    }catch (Exception $e){
+
+    }
+    sleep(1);
+    echo '--------------------------'.PHP_EOL;
+}
 
