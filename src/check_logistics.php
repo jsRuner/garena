@@ -30,7 +30,20 @@
 //                佛祖保佑       永无BUG        永不修改              //
 ////////////////////////////////////////////////////////////////////
 
-require '../vendor/autoload.php'; //注意命令执行的位置。
+
+$flag = file_exists("'vendor/autoload.php'");
+
+
+if ($flag){
+    require 'vendor/autoload.php'; //注意命令执行的位置。
+
+}else{
+    require '../vendor/autoload.php'; //注意命令执行的位置。
+
+}
+
+
+
 //require 'vendor/autoload.php'; //注意命令执行的位置。
 use GuzzleHttp\Client;
 
@@ -61,11 +74,19 @@ class check_logistics
 
     public function readInfo()
     {
-        $handle = @fopen("../code.txt", "r");
+        if (file_exists("code.txt")){
+            $handle = @fopen("code.txt", "r");
+        }else{
+            $handle = @fopen("../code.txt", "r");
+        }
+
         if ($handle) {
             while (!feof($handle)) {
-                $buffer = fgets($handle, 4096);
-//                echo $buffer;
+                $buffer = trim(fgets($handle, 4096));
+                //跳过空白
+                if (empty($buffer)){
+                    continue;
+                }
                 $info = explode("----", $buffer);
                 $this->infos[] = $info;
 //                var_dump($info);
@@ -79,16 +100,20 @@ class check_logistics
         $result = "";
         foreach ($this->infos as $info) {
             $result .= implode("----", $info);
-            $result .= "\r";
+            //win 则\r\n 否则\r
+            $result .= strtoupper(substr(PHP_OS,0,3))==='WIN'?'\r\n':'\r';
         }
-        file_put_contents("../result.txt", $result);
+
+        $file = strtoupper(substr(PHP_OS,0,3))==='WIN'?'result.txt':'../result.txt';
+
+        file_put_contents("result.txt", $result);
     }
 
     public function checkMore()
     {
         foreach ($this->infos as &$info) {
-            $result = $this->check($info[2], $info[3]);
-            $info[] = $result;
+            $result = $this->check(trim($info[2]), trim($info[3]));
+            $info[] = trim($result);
             sleep(3); //3秒一次。
         }
     }
