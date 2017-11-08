@@ -34,6 +34,8 @@ require 'vendor/autoload.php';
 require 'account.php';
 use GuzzleHttp\Client;
 
+include "数据库账号配置.php";
+
 const API_REGISTER_CHECK = "https://sso.garena.com/api/register/check";
 const CAPTCHA_URL = "https://captcha.garena.com/image";
 const API_RUOKUAI = "http://api.ruokuai.com/create.json";
@@ -68,10 +70,10 @@ class Register_machinse{
     {
         $this->account = new Account();
         $this->db =  new \Workerman\MySQL\Connection(
-            "rm-uf6m0ljyp35io68r5o.mysql.rds.aliyuncs.com",
-            "3306", "garena",
-            "bynxe0YET27QBDlK",
-            "garena");
+            $databaseConfig['host'],
+            "3306", $databaseConfig['user'],
+            $databaseConfig['password'],
+            $databaseConfig['name']);
 
         $headers =[
             'User-Agent'=>'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.101 Safari/537.36'
@@ -161,7 +163,7 @@ class Register_machinse{
         $form_params = [
             'username' => $this->account->getUsername(),
             'email' => $this->account->getEmail(),
-            'password' => '9d77624958b23754324211e4dc540e365473b0bfc0d358ff3857bcb8954697d1b90f7b7f6f23c6cd210e906c5c79632ca2faad7285c2704d8b1eefa5a1ecda57ecf300912a45cc493fb58869934b7b1cab807ad3332610d859cc47c9695aa14884fd6f389ef9f7e65667016ef15371002b1c771749e930ce323dafa00b9ea3f2',
+            'password' => '4bf4bfe839c3d60bad3032039ef73dd8db40647272c7b8a2159f9f91632593e7ac8e2d04161087ca8e691dadb0f9b60443aa86bd28d9f63c2d76969fc527912f71e14bfd45ca8f7ea47c02dc45321a1952a9e2e429342beaad2ab88bafc8cff4f916ffa974abcc3cec01f59b3fba25f4e8948b39e4f6f97eb24b283e4ba795da',
             'location' => 'US',
             'redirect_uri' => 'https://sso.garena.com/ui/login?locale=en-US&redirect_uri=https%3A%2F%2Fintl.garena.com%2F&app_id=10100&display=page',
             'format' => 'json',
@@ -379,8 +381,8 @@ class Register_machinse{
         $postFields = array(
             'username' => $config['username'],
             'password' => $config['password'],
-            'softid' => 87478,	//改成你自己的
-            'softkey' => '8f200eeed01f4847bd02f6a2829dcb75',	//改成你自己的
+            'softid' => 87478,
+            'softkey' => '8f200eeed01f4847bd02f6a2829dcb75',
             'id' => $this->captcha_id
         );
 
@@ -408,7 +410,7 @@ class Register_machinse{
         $filename = realpath('.').'/'.$captcha_file;	//img.jpg是测试用的打码图片，4位的字母数字混合码,windows下的PHP环境这里需要填写完整路径
         $ch = curl_init();
 
-        include "配置文件.php";
+        include "若快账号配置.php";
         $postFields = array('username' => $config['username'],
             'password' => $config['password'],
             'typeid' => 1000,	//4位的字母数字混合码   类型表http://www.ruokuai.com/pricelist.aspx
@@ -452,8 +454,6 @@ class Register_machinse{
 $register_machinese = new Register_machinse();
 while (true){
     try{
-
-//        $register_machinese = new Register_machinse();
         $register_machinese->register();
     }catch (Exception $e){
 

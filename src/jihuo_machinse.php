@@ -74,10 +74,11 @@ class  Jihuo_machinse {
     public function jihuo_account()
     {
         $this->send_account();
-        $result = $this->get_account();
-        if ($result){
-            $this->login_email();
-        }
+
+//        $result = $this->get_account();
+//        if ($result){
+//            $this->login_email();
+//        }
 
     }
 
@@ -103,16 +104,15 @@ class  Jihuo_machinse {
 
 
             $mail = new Message;
-            $mail->setFrom('hi_php@163.com')
-                ->addTo('doudouchidou@yeah.net')
-                ->addTo('zhangxiaoquan7777@163.com')
+            $mail->setFrom('zhangxiaoquan7777@163.com')
+                ->addTo('doudouchidou@qq.com')
                 ->setSubject(date('Y-m-d-H-i-s') . "账号" . $num . "条")
                 ->setBody($body);
 
             $mailer = new Nette\Mail\SmtpMailer([
                 'host' => 'smtp.163.com',
-                'username' => 'hi_php@163.com',
-                'password' => 'xxoo123',
+                'username' => 'zhangxiaoquan7777@163.com',
+                'password' => 'lulu123',
 //                'secure' => 'ssl', //使用465端口发送邮件。
             ]);
 
@@ -123,10 +123,10 @@ class  Jihuo_machinse {
                 $this->send_flag = false;
             }
 
-            if ($this->send_flag){
-                $sql = "update `account` set `status`=2 WHERE  `id` in (".$ids.")";
-                $this->db->query($sql);
-            }
+//            if ($this->send_flag){
+//                $sql = "update `account` set `status`=2 WHERE  `id` in (".$ids.")";
+//                $this->db->query($sql);
+//            }
 
 
 
@@ -232,18 +232,15 @@ class  Jihuo_machinse {
     }
 }
 
-//
 $jihuo_machinse = new Jihuo_machinse();
-//
-//
 while(true){
     try{
 
         $jihuo_machinse->jihuo_account();
+        break;
     }catch (Exception $e){
 
     }
-    sleep(1);
     echo '--------------------------'.PHP_EOL;
 }
 
