@@ -4,6 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
+    "hash": "6351242e93b4ce980239096c85cf80c5",
     "content-hash": "efb9450cf1e08981e92d2986fb30512f",
     "packages": [
         {
@@ -69,7 +70,7 @@
                 "rest",
                 "web service"
             ],
-            "time": "2017-06-22T18:50:49+00:00"
+            "time": "2017-06-22 18:50:49"
         },
         {
             "name": "guzzlehttp/promises",
@@ -120,7 +121,7 @@
             "keywords": [
                 "promise"
             ],
-            "time": "2016-12-20T10:07:11+00:00"
+            "time": "2016-12-20 10:07:11"
         },
         {
             "name": "guzzlehttp/psr7",
@@ -185,7 +186,7 @@
                 "uri",
                 "url"
             ],
-            "time": "2017-03-20T17:10:46+00:00"
+            "time": "2017-03-20 17:10:46"
         },
         {
             "name": "nette/mail",
@@ -246,7 +247,7 @@
             ],
             "description": "Nette Mail: Sending E-mails",
             "homepage": "https://nette.org",
-            "time": "2017-07-13T16:51:28+00:00"
+            "time": "2017-07-13 16:51:28"
         },
         {
             "name": "nette/utils",
@@ -325,7 +326,7 @@
                 "utility",
                 "validation"
             ],
-            "time": "2017-08-20T17:32:29+00:00"
+            "time": "2017-08-20 17:32:29"
         },
         {
             "name": "psr/http-message",
@@ -375,7 +376,7 @@
                 "request",
                 "response"
             ],
-            "time": "2016-08-06T14:39:51+00:00"
+            "time": "2016-08-06 14:39:51"
         },
         {
             "name": "workerman/mysql",
@@ -413,7 +414,7 @@
                 "pdo",
                 "pdo_mysql"
             ],
-            "time": "2017-03-18T01:48:33+00:00"
+            "time": "2017-03-18 01:48:33"
         }
     ],
     "packages-dev": [],
